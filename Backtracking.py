@@ -3,28 +3,8 @@
 
 from FloodFill import StripLineEnd, ReadField, PrintField
 from FloodFill import emptyMarker, filledMarker, specialMarker, EscapeMarker
-'''
-def StripLineEnd( string ):
-  while string[-1:] in "\r\n":
-    string = string[0:-1]
-  return string
+import numpy as np
 
-def ReadField( FileName ):
-  field = []
-  file = open( FileName, "r" )
-  for line in file:
-    #line = line.strip()
-    line = StripLineEnd(line)
-    lineList = []
-    for char in line:
-      lineList.append(char)
-    field.append(lineList)
-  return field
-
-def PrintField(field):
-  for y in range( len(field) ):
-    print( "|%s|" % ''.join(field[y]) )
-'''
 # row Zeile, rowNumber = y
 # coumn Spalte, columnNumber = x
 #                 , y        , x
@@ -63,93 +43,115 @@ def isEscape( Field, rowNumber, columnNumber ):
 #	print( "true" )
 	return True
 
-def runTests( TestField ):
-	print( "Test borders" )
-	isFree( TestField,  0,  0 )
-	isFree( TestField, -1,  0 )
-	isFree( TestField,  0, -1 )
-	isFree( TestField,  8,  6 )
-	isFree( TestField,  8,  7 )
-	isFree( TestField,  9,  6 )
-
-	print( "Test markers" )
-	isFree( TestField, 0, 0 )
-	isFree( TestField, 1, 0 )
-	isFree( TestField, 0, 1 )
-	isFree( TestField, 1, 1 )
-	
-	print( "Test Escape" )
-	isEscape( TestField, 0, 0 )
-	isEscape( TestField, 1, 1 )
-	isEscape( TestField, 1, 2 )
-	isEscape( TestField, 7, 2 )
-
-
-gefundeneRouten = []
-#                    , y        , x           , (x0,y0), (x1,y1), ...
-def findEscape( Field, rowNumber, columnNumber, route=[] ):
-	# format (y,x). >, <, v, ^
-	neighbours = ( (0,1), (0,-1), (1,0), (-1,0) )
-
-	print( "--------------------" ) 
-	print( route )
-	print( "z=%d s=%d %s" % (rowNumber, columnNumber, "suche") )
-
-	if len(route) == 0 :
-		route.append( (rowNumber,columnNumber) )
-	# test alle Nachbarn, auf Escape
-	for n in neighbours:
-		Row    = rowNumber    + n[0] # y
-		Column = columnNumber + n[1] # x
-		pos = (Row, Column)
-		# sind wir schon da?
-		if isEscape( Field, Row, Column ):
-			# Ausgang gefunden route ausgeben, bzw merken
-			print( "z=%d s=%d %s" % (Row, Column, "Ausgang gefunden") )
-			newRoute = route[:]
-			newRoute.append( (Row,Column) )
-			print( "**********************************" )
-			print( len(newRoute) )
-			print( newRoute )
-			print( "**********************************" )
-			gefundeneRouten.append( [len(newRoute), newRoute] )
+def visited( route, pos ):
+	for row in route:
+		#if pos in row[0]:#geht nicht
+		if pos == row[0]:
 			return True
-
-		# ist nachbar frei
-		if isFree( Field, Row, Column ):
-			print( "z=%d s=%d %s" % (Row, Column, "freier Nachbar") )
-			if pos in route:
-				print( "NaNaNa hier waren wir doch schon!" )
-				#weiter mit nächstem Nachbarn
-				continue
-			
-			newRoute = route[:]
-			newRoute.append( (Row,Column) )
-			findEscape( Field, Row, Column, newRoute )
-			#print( newRoute )
-			# waren wir schon hier?
-			#pos = (Row, Coumn)
-			#if pos in route:
-			#	pass
-			#	#hier waren wir schon. Markieren, dass es hier nicht weiter geht
-			#	#return None
-			#else:
-			#	pass
-			#	#hier waren wir noch nicht
-			#	#findEscape aufrufen
-	
-	print( "hier gehts nicht weiter!" )
 	return False
 
+def isDeadEnd( pos ):
+	return False
+
+def isKnownRoute( pos ):
+	return False
+
+def printRoute( route ):
+	for row in route:
+		print( row )
+
+def goBack( route ):
+	Removed = []
+	currentPos = route[-1][0]
+	while currentPos == []:
+		# route kürzen
+		route = route[:-1]
+		# zu entfernendes element in seperate Liste eintragen
+		currentPos = route[-1][0]
+		Removed.append( currentPos )
+		if currentPos == []:
+			break
+		# element entfernen
+		route[:-1] = route[-1][1:]
+
+def findEscape( Field, rowNumber, columnNumber, route=[] ):
+	# format (y,x).    >,      <,      ^,     v
+	neighbours = ( (0,1), (0,-1), (-1,0), (1,0) )
+	Steps = 0
+#	print( "--------------------" )
+#	print( route )
+	#print( "z=%d s=%d %s" % (rowNumber, columnNumber, "suche") )
+
+	if len(route) == 0 :
+		route.append( [(rowNumber,columnNumber)] )
+	currentPos = route[-1]
+	print( "%s %s" % (currentPos, "Hallo ich bin Lara und ich muss jetzt durch dieses Labyrinth") )
+	PrintField( Field )
+	
+	while len(route) > 0 :
+		# TODO: remove Steps. Only needed for debugging
+		Steps = Steps + 1
+		if Steps > 50:
+			return
+
+		currentPos = route[-1][0]
+		# teste, ob wir in einer Sackgasse stecken
+		if currentPos == []:
+			goBack( route )
+		
+		# teste alle Nachbarn
+		newWays = []
+		for n in neighbours:
+			Pos = tuple( np.add( currentPos, n ) )
+			# sind wir schon da?
+			if isEscape( Field, rowNumber=Pos[0], columnNumber=Pos[1] ):
+				# Ausgang gefunden route ausgeben, bzw merken
+				#print( "z=%d s=%d %s" % (Row, Column, "Ausgang gefunden") )
+				#newRoute = route[:]
+				#newRoute.append( (Row,Column) )
+				#print( "**********************************" )
+				#print( len(newRoute) )
+				#print( newRoute )
+				#print( "**********************************" )
+				#gefundeneRouten.append( [len(newRoute), newRoute] )
+				#return True
+				pass
+
+			# ist nachbar frei
+			if isFree( Field, rowNumber=Pos[0], columnNumber=Pos[1] ):
+				if visited( route, Pos ):
+					print( "%s %s" % (Pos, "hier war ich schon") )
+					#try next neighbour
+					continue
+				if isDeadEnd( Pos ):
+					print( "%s %s" % (Pos, "hier ist eine Sackgasse") )
+					#try next neighbour
+					continue
+				if isKnownRoute( Pos ):
+					print( "%s %s" % (Pos, "den weg kenne ich schon") )
+					#try next neighbour
+					continue
+				
+				print( "%s %s" % (Pos, "vielleicht geht es ja hier weiter?") )
+				newWays.append( Pos )
+		# add possible ways to visited route
+		route.append( newWays )
+		printRoute( route )
+
+	print( "hier gehts nicht weiter!" )
+
 if __name__ == "__main__":
-	fileName = "field2.txt"
+	#fileName = "TestField1.txt"
+	fileName = "TestField2.txt"
+	#fileName = "TestField3.txt"
+	#fileName = "TestField4.txt"
 	TestField = ReadField( fileName )
 	#PrintField( TestField )
 	
 	#runTests( TestField )
 	
 	findEscape( TestField, 1, 1 )
-	
+	'''
 	print( "\n\n\n\n\n" )
 	min = 0
 	for i in range( 1, len(gefundeneRouten) ):
@@ -163,10 +165,10 @@ if __name__ == "__main__":
 		print( "**********************************" )
 		print( "len=%d" % len )
 		print( route )
+	'''
 	#print( "--------------------" )
 	#findEscape( TestField, 7, 1 )
 	#print( "--------------------" ) 
 	#findEscape( TestField, 7, 3 )
 	#print( "--------------------" ) 
 	#findEscape( TestField, 3, 4 )
-	
