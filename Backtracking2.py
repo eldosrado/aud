@@ -57,28 +57,19 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		return list()
 		raise Exception( "max NumTrys erreicht" )
 	'''
-	#global InstanceCount
-	#InstanceCount = InstanceCount + 1
 	
 	# format (y,x).    >,      <,      ^,     v
 	richtung = ( (0,1), (0,-1), (-1,0), (1,0) )
 	pos = ( rowNumber, columnNumber )
-	'''
-	if route ist Losung:
-		#gib route aus
-	else:
-		for k' in nachbarn:
-			findEscape( Field, k', route )
-	'''
+	
+	
 	listroute = list( route )
 	listroute.append( pos )
 	route = tuple( listroute )
 	printRoute( Field, route )
-	#print( InstanceCount, route )
 	
 	if isEscape( Field, rowNumber, columnNumber ):
 		#print( "gefunden", route )
-		#InstanceCount = InstanceCount - 1
 		return list(route)
 	else:
 		#for k' in nachbarn:
@@ -88,6 +79,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 			if isFree( Field, temp[0], temp[1] ):
 				Nachbarn.append( temp )
 		
+		# nicht zurück gehen
 		nichtBesucht = []
 		for FreierNachbar in Nachbarn:
 			if not FreierNachbar in route:
@@ -96,7 +88,6 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		result = []
 		for k in nichtBesucht:
 			temp = findEscape( Field, k[0], k[1], route )
-			#print( "IC", InstanceCount, temp )
 			if temp != []:
 				if len(temp) > 0 and isinstance( temp[0], list ):
 					for row in temp:
@@ -104,24 +95,34 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 				else:
 					result.append( temp )
 		
-		#print( InstanceCount, "result", result )
-		#InstanceCount = InstanceCount - 1
 		if len( result ) > 0:
 			return result
 		else:
 			return list()
 
 if __name__ == "__main__":
-	#fileName = "TestField1.txt"
-	#fileName = "TestField2.txt"
-	fileName = "TestField3.txt"
-	#fileName = "TestField4.txt"
+	#fileName = "TestField1.txt"		#spirale
+	#fileName = "TestField2.txt"		#klein
+	#fileName = "TestField3.txt"		#groß
+	fileName = "TestField4.txt"		#mittel
+	
 	TestField = ReadField( fileName )
 	PrintField( TestField )
 	
 	#global InstanceCount
 	InstanceCount = 0
 	result = findEscape( TestField, 1, 1 )
+
+	best = result[0]
+	for row in result:
+		if len(row) < len(best):
+			best = row
+	
+	printRoute( TestField, best )
+	print("Beste Route mit %d Schritten" % len(best) )
+	print(best)
+
+	print( "%d Routen gefunden" % len(result) )
 	for row in result:
 		print( ">", row )
-	
+		print("")
