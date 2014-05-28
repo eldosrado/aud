@@ -8,6 +8,8 @@ import copy
 import os
 import time
 
+#Debug = False
+Debug = True
 goBackTimes = 0
 #DeadEnds = []
 DeadEnds = set()
@@ -90,6 +92,8 @@ def printRoute( Field, route, DeadEnds ):
 	else:
 		time.sleep( 0.01)
 	'''
+	if Debug:
+		time.sleep(0.05)
 
 def goBack( route ):
 	#global goBackTimes

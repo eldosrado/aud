@@ -28,8 +28,6 @@ def PrintField(field):
 	for y in range( len(field) ):
 		print( "|%s|" % ''.join(field[y]) )
 		#for x in range( len(field[0]) ):
-	print()
-
 
 def CreateField():
 	# feld mit ' 'erstellen
