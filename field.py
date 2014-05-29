@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
 from FloodFill import StripLineEnd, ReadField, PrintField
@@ -7,15 +7,53 @@ from tkinter import *
 import threading
 import time
 import numpy as np
+try:
+	from color_console import set_color
+except:
+	import colorama
+	colorama.init()
+	
+	def set_color( color='gray' ):
+		if color == 'black':
+			print( colorama.Fore.BLACK, end='' )
+		
+		if color == 'blue':
+			print( colorama.Fore.BLUE + colorama.Style.BRIGHT , end='' )
+			
+		if color == 'green':
+			print( colorama.Fore.GREEN + colorama.Style.BRIGHT, end='' )
+			
+		if color == 'cyan':
+			print( colorama.Fore.CYAN + colorama.Style.BRIGHT, end='' )
+			
+		if color == 'red':
+			print( colorama.Fore.RED + colorama.Style.BRIGHT, end='' )
+			
+		if color == 'yellow':
+			print( colorama.Fore.YELLOW + colorama.Style.BRIGHT, end='' )
+			
+		if color == 'magenta':
+			print( colorama.Fore.MAGENTA + colorama.Style.BRIGHT, end='' )
+			
+		if color == 'gray':
+			print( colorama.Fore.RESET + colorama.Style.NORMAL, end='' )
+			
+		if color == 'white':
+			print( colorama.Fore.WHITE + colorama.Style.BRIGHT, end='' )
 
-from color_console import set_color
 
 
 # GUI stuff
 app = None
 canvas = None
 scale = 10
-canvas_el = []
+
+canvas_Rectangle = []
+canvas_Line = []
+canvas_Dot = []
+canvas_LittleDot = []
+canvas_Ring = []
+
 input = None
 label = None
 # sync stuff
@@ -62,17 +100,6 @@ def StopFind():
 	con.notify()
 	con.release()
 
-def drawField( ):
-	pad = 2
-	for y in range( len(field) ):
-		for x in range( len(field[0]) ):
-			x1 = x * scale
-			y1 = y * scale
-			if field[y][x] == filledMarker:
-				canvas.create_rectangle( x1+pad, y1+pad, x1 + scale-pad, y1 + scale-pad, fill="#fb0" )
-			if field[y][x] == EscapeMarker:
-				canvas.create_rectangle( x1+pad, y1+pad, x1 + scale-pad, y1 + scale-pad, fill="red" )
-
 def init( Field ):
 	global app
 	global canvas
@@ -115,6 +142,19 @@ def init( Field ):
 	exitbutton.grid( row=0, column=3 )
 	exitbutton.pack( side=LEFT, padx=5, pady=5 )
 
+def drawField( ):
+	pad = 2
+	for y in range( len(field) ):
+		for x in range( len(field[0]) ):
+			x1 = x * scale
+			y1 = y * scale
+			if field[y][x] == filledMarker:
+				nr = canvas.create_rectangle( x1+pad, y1+pad, x1 + scale-pad, y1 + scale-pad, fill="yellow" )
+				canvas_Rectangle.append( nr )
+			if field[y][x] == EscapeMarker:
+				canvas.create_rectangle( x1+pad, y1+pad, x1 + scale-pad, y1 + scale-pad, fill="red" )
+				canvas_Rectangle.append( nr )
+
 def drawLine( pos1, pos2 ):
 	pad = 5
 	x1 = pos1[1] * scale
@@ -122,35 +162,56 @@ def drawLine( pos1, pos2 ):
 	x2 = pos2[1] * scale
 	y2 = pos2[0] * scale
 	nr = canvas.create_line( x1+pad, y1+pad, x2+pad, y2+pad, fill="blue", width=3 )
-	canvas_el.append( nr )
+	canvas_Line.append( nr )
 
 def drawDot( pos ):
 	pad = 2
 	x1 = pos[1] * scale
 	y1 = pos[0] * scale
 	nr = canvas.create_oval( x1+pad, y1+pad, x1 + scale-pad, y1 + scale-pad, fill="blue" )
-	canvas_el.append( nr )
+	canvas_Dot.append( nr )
 
-def drawRing( pos ):
-	pad = 2
+def drawLittleDot( pos ):
+	pad = 4
 	x1 = pos[1] * scale
 	y1 = pos[0] * scale
-	nr = canvas.create_oval( x1+pad, y1+pad, x1 + scale-pad, y1 + scale-pad, fill="" )
-	#canvas_el.append( nr )
+	nr = canvas.create_oval( x1+pad, y1+pad, x1 + scale-pad, y1 + scale-pad, fill="blue" )
+	canvas_LittleDot.append( nr )
+
+def drawRing( pos ):
+	#pad = 2
+	#x1 = pos[1] * scale
+	#y1 = pos[0] * scale
+	#nr = canvas.create_oval( x1+pad, y1+pad, x1 + scale-pad, y1 + scale-pad, fill="" )
+	#canvas_Ring.append( nr )
+	pass
 
 def drawRoute( Route ):
 	global canvas_el
+
+	print( "drawRoute start" )
+	start = time.clock()
+	
 	# clear previous route
-	for el in canvas_el:
-		canvas.delete( el )
+	#for el in canvas_Dot:
+	#	canvas.delete( el )
+	#for el in canvas_Line:
+	#	canvas.delete( el )
+	
+	canvas.delete( ALL )
+	drawField()
 	
 	#draw lines
 	for index in range( len(Route)-1 ):
 		drawLine( Route[index], Route[index+1] )
 	
 	#draw dots
-	for pos in Route:
-		drawDot( pos )
+	#for pos in Route:
+	#	drawDot( pos )
+	
+	end = time.clock()
+	runtime = end - start
+	print( "drawRoute end %f" % runtime )
 
 def inField( Field, rowNumber, columnNumber ):
 	LeftBorder = 0
@@ -212,15 +273,10 @@ def testcolors():
 	set_color('white')
 	print( "white" )
 
-def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
+def sync():
 	global con
 	global runs
-	
-	if runs < 0:
-		return list()
-	
-	#sync thread
-	# wait for runs to be not 0
+
 	con.acquire()
 	while runs == 0:
 		print( "findEscape is waiting\n" )
@@ -228,7 +284,16 @@ def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
 	#print( "findEscape is running" )
 	runs -= 1
 	con.release()
+
+def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
+	global runs
 	
+	if runs < 0:
+		return list()
+	
+	#sync thread
+	# wait for runs to be not 0
+	sync()
 	if runs < 0:
 		return list()
 	
@@ -256,6 +321,7 @@ def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
 		return list(route)
 	
 	visit( pos )
+	
 	# wenn ich nicht am Ausgang bin,
 	# Freie Nachbarn bestimmen (isFree benutzen)
 	Nachbarn = []
@@ -318,15 +384,8 @@ def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
 			temp = findEscape( Field, notvisitedPos[0], notvisitedPos[1], route, found )
 			
 			print( "<", pos )
-			drawRoute( route )
-			# sync #################################
-			con.acquire()
-			while runs == 0:
-				print( "findEscape is waiting\n" )
-				con.wait()
-			runs -= 1
-			con.release()
-			# sync #################################
+			#drawRoute( route )
+			sync()
 			
 			if temp != []:
 				set_color( 'blue' )
@@ -338,7 +397,7 @@ def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
 				print( result )
 				# Kein Weg zum Ausgang bekannt
 				if found == []:
-					print( pos, "", end='' )
+					print( pos, "", end="" )
 					if 0 < len(temp) < len(route):
 						# bessere route gefunden und diese auch benutzen
 						set_color( 'red' )
@@ -385,31 +444,12 @@ def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
 		# else:
 			# return list()
 
-'''
-def myThreadTest( x=1, y=1, route=() ):
-	global runtime
-	global con
-	
-	#while exit not found do bla bla bla
-	while not Exit:
-		con.acquire()
-		while runtime == 0:
-			con.wait()
-			print( "bla from myThreadTest" )
-		
-		for i in range( runtime ):
-			print( "%s %s %s %s" % (i, x, y, route) )
-		
-		runtime = 0
-		con.release()
-'''
-
 if __name__ == "__main__":
 	set_color()
 	#fileName = "TestField1.txt"		#spirale
-	fileName = "TestField2.txt"		#klein
+	#fileName = "TestField2.txt"		#klein
 	#fileName = "TestField4.txt"		#mittel
-	#fileName = "TestField3.txt"		#groß
+	fileName = "TestField3.txt"		#groß
 	
 	TestField = ReadField( fileName )
 
@@ -426,16 +466,18 @@ if __name__ == "__main__":
 	
 	con = threading.Condition()
 	
-	#findEscapeThread = threading.Thread( target = myThreadTest, args=(1,1) )
 	findEscapeThread = threading.Thread( target = findEscape, args=(TestField, 1, 1) )
 	findEscapeThread.start()
+	
+	
+	#route = [(1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1), (8, 1), (9, 1)]
+	#drawRoute(route)
 	
 	app.mainloop()
 	
 	print( "kill findEscapeThread" )
 	# kill findEscapeThread
 	con.acquire()
-	#Exit = True
 	runs = -1
 	con.notify()
 	con.release()
