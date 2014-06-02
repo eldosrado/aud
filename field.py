@@ -7,6 +7,8 @@ from tkinter import *
 import threading
 import time
 import numpy as np
+import colorsys
+
 try:
 	from color_console import set_color
 except:
@@ -59,6 +61,9 @@ label = None
 # sync stuff
 con = None
 runs = 1
+# gui color stuff
+LastColor = None
+CurrentColor = None
 
 # findEscape stuff
 field = None
@@ -139,7 +144,7 @@ def init( Field ):
 	# create field in canvas
 	canvas_width  = len( field[0] ) * scale
 	canvas_height = len( field )    * scale
-	canvas = Canvas( app, width=canvas_width, height=canvas_height, bg="#F0F0F0" )
+	canvas = Canvas( app, width=canvas_width, height=canvas_height, bg="#000000" )
 	canvas.pack( side=TOP, padx=5, pady=5 )
 	drawField()
 	
@@ -167,6 +172,54 @@ def init( Field ):
 	exitbutton.grid( row=0, column=3 )
 	exitbutton.pack( side=LEFT, padx=5, pady=5 )
 
+def SetNewRouteColor():
+	global CurrentColor
+	global canvas_Line
+	
+	canvas_Line = []
+	CurrentColor = None
+
+def RGBToHTMLColor( rgb_tuple ):
+	""" convert an (R, G, B) tuple to #RRGGBB """
+	hexcolor = '#%02x%02x%02x' % tuple( rgb_tuple )
+	# that's it! '%02x' means zero-padded, 2-digit hex values
+	return hexcolor
+
+def GetColor():
+	global LastColor
+	global CurrentColor
+	set_color('blue')
+	if LastColor == None:
+		print( "LastColor = None" )
+		color = 1.0
+		# Farbwert = Blau
+		# Sättigung 100%
+		# Hellwert = 100%
+		LastColor = color
+	
+	if CurrentColor == None:
+		print( "CurrentColor = None" )
+		color = LastColor
+		# Farbwert = Blau
+		# Sättigung -5%
+		# Hellwert = 100%
+		sub = 10.0/100.0
+		color = color - sub
+		if color < 0:
+			color = color + 1.0
+		
+		val = colorsys.hsv_to_rgb( color, 1.0, 1.0 )
+		LastColor = color
+		
+		val2 = [ int( el * 255 ) for el in val ]
+		hexcolor = RGBToHTMLColor( val2 )
+		
+		CurrentColor = hexcolor
+		print( "CurrentColor = %s" % CurrentColor )
+	
+	set_color()
+	return CurrentColor
+
 def drawField( ):
 	pad = 2
 	for y in range( len(field) ):
@@ -181,12 +234,13 @@ def drawField( ):
 				canvas_Rectangle.append( nr )
 
 def drawLine( pos1, pos2 ):
+	FillColor = GetColor()
 	pad = 5
 	x1 = pos1[1] * scale
 	y1 = pos1[0] * scale
 	x2 = pos2[1] * scale
 	y2 = pos2[0] * scale
-	nr = canvas.create_line( x1+pad, y1+pad, x2+pad, y2+pad, fill="blue", width=3 )
+	nr = canvas.create_line( x1+pad, y1+pad, x2+pad, y2+pad, fill=FillColor, width=3 )
 	canvas_Line.append( nr )
 
 def drawDot( pos ):
@@ -213,18 +267,18 @@ def drawRing( pos ):
 
 def drawRoute( Route ):
 	global canvas_el
-
+	debug = True
+	
 	#print( "drawRoute start" )
 	#start = time.clock()
 	
 	# clear previous route
-	#for el in canvas_Dot:
-	#	canvas.delete( el )
-	#for el in canvas_Line:
-	#	canvas.delete( el )
-	
-	canvas.delete( ALL )
-	drawField()
+	if debug == False:
+		canvas.delete( ALL )
+		drawField()
+	else:
+		for el in canvas_Line:
+			canvas.delete( el )
 	
 	#draw lines
 	for index in range( len(Route)-1 ):
@@ -288,8 +342,8 @@ def visit( pos, route=[] ):
 		posToStartLen[ pos ] = len(route)
 	else:
 		Length = posToStartLen[ pos ]
-		if len(route) > Length:
-			pass
+		if len(route) < Length:
+			print("visit(): got better route")
 
 def visited( pos ):
 	global visitedPoints
@@ -299,6 +353,7 @@ def visited( pos ):
 
 def findEscapeInit( route ):
 	global visitedPoints
+	
 	if len(route) == 0:
 		print( "Init findEscape" )
 		visitedPoints = []
@@ -348,7 +403,9 @@ def getNotVisited( Nachbarn, route ):
 def getBestRoute( result ):
 	bestRoute = []
 	
-	values = sorted( result.values() )
+	values = list( result.values() )
+	values.sort( key = len )
+	
 	for k in values:
 		if k != []:
 			bestRoute = k
@@ -438,6 +495,8 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	
 	best = getBestRoute( result )
 	#print( "best", best )
+	print( "Setting a new color for route" )
+	SetNewRouteColor()
 	
 	print( pos, "best (%d):" %len(best) )
 	#if result != [] and pos == result[0]:
@@ -448,6 +507,9 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		print( "#######################################################" )
 		print( best )
 		drawRoute( best )
+	
+	#if best == []:
+	#	set_color('red')
 	
 	return best
 
