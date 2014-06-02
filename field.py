@@ -308,6 +308,7 @@ def getNotVisited( Nachbarn, route ):
 	res = []
 	for FreierNachbar in Nachbarn:
 		if not visited(FreierNachbar):
+			set_color( 'white' )
 			print( FreierNachbar, "frei => hier weitersuchen" )
 			res.append( FreierNachbar )
 			drawRing( FreierNachbar )
@@ -316,11 +317,12 @@ def getNotVisited( Nachbarn, route ):
 			teil2 = route[-2:]
 			
 			if FreierNachbar in teil2:
+				set_color( )
 				print( FreierNachbar, "besucht => nicht zurück gehen" )
 				#print( "teil1", teil2 )
 			
 			if FreierNachbar in teil1:
-				set_color( 'white' )
+				set_color( 'green' )
 				print( FreierNachbar, "besucht => optimieren" )
 				# #print( "teil2", teil1 )
 				# # TODO: hier route optimieren
