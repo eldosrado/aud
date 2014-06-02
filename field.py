@@ -63,10 +63,35 @@ runs = 1
 # findEscape stuff
 field = None
 visitedPoints=[]
+posToStartLen = {}
 
 #findEscape_runs = 0
 #run = False
 #Exit = False
+def testcolors():
+	set_color('blue')
+	print( "blue" )
+	
+	set_color('green')
+	print( "green" )
+	
+	set_color('cyan')
+	print( "cyan" )
+	
+	set_color('red')
+	print( "red" )
+	
+	set_color('yellow')
+	print( "yellow" )
+	
+	set_color('magenta')
+	print( "magenta" )
+	
+	set_color('gray')
+	print( "gray" )
+	
+	set_color('white')
+	print( "white" )
 
 def SetRunTime():
 	global runs
@@ -189,8 +214,8 @@ def drawRing( pos ):
 def drawRoute( Route ):
 	global canvas_el
 
-	print( "drawRoute start" )
-	start = time.clock()
+	#print( "drawRoute start" )
+	#start = time.clock()
 	
 	# clear previous route
 	#for el in canvas_Dot:
@@ -209,9 +234,22 @@ def drawRoute( Route ):
 	#for pos in Route:
 	#	drawDot( pos )
 	
-	end = time.clock()
-	runtime = end - start
-	print( "drawRoute end %f" % runtime )
+	#end = time.clock()
+	#runtime = end - start
+	#print( "drawRoute end %f" % runtime )
+	pass
+
+def sync():
+	global con
+	global runs
+
+	con.acquire()
+	while runs == 0:
+		print( "findEscape is waiting\n" )
+		con.wait()
+	#print( "findEscape is running" )
+	runs -= 1
+	con.release()
 
 def inField( Field, rowNumber, columnNumber ):
 	LeftBorder = 0
@@ -237,10 +275,21 @@ def isEscape( Field, rowNumber, columnNumber ):
 		return False
 	return True
 
-def visit( pos ):
+def visit( pos, route=[] ):
 	global visitedPoints
+	#global posToStartLen
+	
 	if not pos in visitedPoints:
+		'''
+		Wenn pos noch nicht besucht wurde, die aktuelle länge der Route und die Route speichern
+		'''
 		visitedPoints.append( pos )
+		Length = len(route)
+		posToStartLen[ pos ] = len(route)
+	else:
+		Length = posToStartLen[ pos ]
+		if len(route) > Length:
+			pass
 
 def visited( pos ):
 	global visitedPoints
@@ -248,48 +297,70 @@ def visited( pos ):
 		return True
 	return False
 
-def testcolors():
-	set_color('blue')
-	print( "blue" )
-	
-	set_color('green')
-	print( "green" )
-	
-	set_color('cyan')
-	print( "cyan" )
-	
-	set_color('red')
-	print( "red" )
-	
-	set_color('yellow')
-	print( "yellow" )
-	
-	set_color('magenta')
-	print( "magenta" )
-	
-	set_color('gray')
-	print( "gray" )
-	
-	set_color('white')
-	print( "white" )
+def findEscapeInit( route ):
+	global visitedPoints
+	if len(route) == 0:
+		print( "Init findEscape" )
+		visitedPoints = []
+		posToStartLen = []
 
-def sync():
-	global con
-	global runs
+def getNotVisited( Nachbarn, route ):
+	res = []
+	for FreierNachbar in Nachbarn:
+		if not visited(FreierNachbar):
+			print( FreierNachbar, "frei => hier weitersuchen" )
+			res.append( FreierNachbar )
+			drawRing( FreierNachbar )
+		else:
+			teil1 = route[:-2]
+			teil2 = route[-2:]
+			
+			if FreierNachbar in teil2:
+				print( FreierNachbar, "besucht => nicht zurück gehen" )
+				#print( "teil1", teil2 )
+			
+			if FreierNachbar in teil1:
+				set_color( 'white' )
+				print( FreierNachbar, "besucht => optimieren" )
+				# #print( "teil2", teil1 )
+				# # TODO: hier route optimieren
+				# i = route.index( FreierNachbar )
+				# new = route[:i+1]
+				# new.append( pos )
+				# print( "index:", i, "len %d" % len(new) )
+				# if neueRoute == []:
+					# neueRoute = new
+				# elif len(new) < len(neueRoute):
+					# neueRoute = new
+	# neueRoute = []
+	# if neueRoute != []:
+		# print( "Benutze neue Route" )
+		# print( "neueRoute", neueRoute )
+		# route = neueRoute
+		# drawRoute( route )
+		# if nichtBesucht == []:
+			# return neueRoute
 
-	con.acquire()
-	while runs == 0:
-		print( "findEscape is waiting\n" )
-		con.wait()
-	#print( "findEscape is running" )
-	runs -= 1
-	con.release()
+	return res
 
-def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
+def getBestRoute( result ):
+	bestRoute = []
+	
+	values = sorted( result.values() )
+	for k in values:
+		if k != []:
+			bestRoute = k
+			break
+	
+	return bestRoute
+
+def findEscape( Field, rowNumber, columnNumber, route=() ):
 	global runs
 	
 	if runs < 0:
 		return list()
+	
+	findEscapeInit( route )
 	
 	#sync thread
 	# wait for runs to be not 0
@@ -307,20 +378,21 @@ def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
 	route = list( listroute )
 	drawRoute( route )
 	set_color('yellow')
+	
 	print( "Entry: ", pos )
-	print( "Route: ", route )
-	if found != []:
-		print( "found", found )
+	print( "Route: %d\n" % len(route), route )
 	
 	# bin ich am Ausgang
 	if isEscape( Field, rowNumber, columnNumber ):
 		set_color('green')
 		print( pos, "Ausgang gefunden len %d" %len(route) )
 		print( route )
+		#saveNewRouteToEscape( route )
 		set_color()
 		return list(route)
 	
-	visit( pos )
+	# mark this pos as used
+	visit( pos, route )
 	
 	# wenn ich nicht am Ausgang bin,
 	# Freie Nachbarn bestimmen (isFree benutzen)
@@ -332,124 +404,57 @@ def findEscape( Field, rowNumber, columnNumber, route=(), found=[] ):
 	
 	set_color( 'cyan' )
 	print( "Nachbarn", Nachbarn )
-	#set_color()
 	
 	# habe alle freien Nachbarn
 	# jetzt überprüfe ich, ob einer der Nachbarn schon besucht wurde
+	nichtBesucht = getNotVisited( Nachbarn, route )
 	
-	nichtBesucht = []
-	neueRoute = []
-	for FreierNachbar in Nachbarn:
-		if not visited(FreierNachbar):
-			print( FreierNachbar, "frei => hier weitersuchen" )
-			nichtBesucht.append( FreierNachbar )
-			drawRing( FreierNachbar )
-		else:
-			teil2 = route[-2:]
-			teil1 = route[:-2]
-			
-			if FreierNachbar in teil2:
-				print( FreierNachbar, "besucht => nicht zurück gehen" )
-				#print( "teil1", teil2 )
-			
-			if FreierNachbar in teil1:
-				set_color( 'white' )
-				print( FreierNachbar, "besucht => optimieren" )
-				#print( "teil2", teil1 )
-				# TODO: hier route optimieren
-				i = route.index( FreierNachbar )
-				new = route[:i+1]
-				new.append( pos )
-				print( "index:", i, "len %d" % len(new) )
-				if neueRoute == []:
-					neueRoute = new
-				elif len(new) < len(neueRoute):
-					neueRoute = new
-	
-	if neueRoute != []:
-		print( "Benutze neue Route" )
-		print( "neueRoute", neueRoute )
-		route = neueRoute
-		drawRoute( route )
-		if nichtBesucht == []:
-			return neueRoute
-	
-	result = []
+	result = {}
 	set_color()
 	# hier die nicht besuchten Punkte abarbeiten
 	for notvisitedPos in nichtBesucht:
 		# Da wir eine rekursion haben, mussen wir überprüfen,
 		# ob wir diesen Punkt nicht schon über einen anderen Punkt erreicht haben
 		if not visited(notvisitedPos):
-			temp = findEscape( Field, notvisitedPos[0], notvisitedPos[1], route, found )
-			
-			print( "<", pos )
-			#drawRoute( route )
-			sync()
-			
-			if temp != []:
-				set_color( 'blue' )
-				print( "temp %d" % len(temp) )
-				print( temp )
-				print( "route %d" % len(route) )
-				print( route )
-				print( "result %d" % len(result) )
-				print( result )
-				# Kein Weg zum Ausgang bekannt
-				if found == []:
-					print( pos, "", end="" )
-					if 0 < len(temp) < len(route):
-						# bessere route gefunden und diese auch benutzen
-						set_color( 'red' )
-						print( "benutze neue Route" )
-						temp.append( pos )
-						route = temp
-						#print( route )
-						drawRoute( route )
-					
-					# ausgang gefunden. weitergeben an nachfolgende Instanzen
-					if len(temp) > len(route):
-						set_color( 'red' )
-						print( "Ausgang gefunden" )
-						found = temp
-					
-					result = temp
-				# Weg zum Ausgang bekannt
-				else:
-					set_color( 'magenta' )
-					print( "found %d temp %d" %(len(found), len(temp)) )
-					if len(temp) < len(found):
-						found = temp
-					#	result = temp
-					result = found
-				set_color()
+			temp = findEscape( Field, notvisitedPos[0], notvisitedPos[1], route )
+			result[notvisitedPos] = temp
+			print( "zurück nach", pos, len(temp) )
+			if pos == (13, 8):
+				print( "result\n", result )
+			#if temp != None:
+			#	# bessere Route bekommen
+			#	sync()
+			#	drawRoute( route )
 		else:
 			set_color( 'red' )
-			print( FreierNachbar, "dieser Punkt wurde schon besucht" )
+			print( notvisitedPos, "dieser Punkt wurde schon besucht" )
 			set_color()
-
-	else:
-		print( pos, "result (%d):" %len(result), result )
-		if result != [] and pos == result[0]:
-			print( "#######################################################" )
-			print( "# Ausgang gefunden :)                                 #" )
-			print( "#######################################################" )
+			result[notvisitedPos] = []
 	
-	if result != []:
-		return result
-	else:
-		return []
-		# if len( result ) > 0:
-			# return result
-		# else:
-			# return list()
+	if pos == (13, 8):
+		print( "result\n", result )
+	
+	best = getBestRoute( result )
+	#print( "best", best )
+	
+	print( pos, "best (%d):" %len(best) )
+	#if result != [] and pos == result[0]:
+	if best != [] and pos == best[0]:
+		set_color('green')
+		print( "#######################################################" )
+		print( "# Ausgang gefunden :)                                 #" )
+		print( "#######################################################" )
+		print( best )
+		drawRoute( best )
+	
+	return best
 
 if __name__ == "__main__":
 	set_color()
 	#fileName = "TestField1.txt"		#spirale
 	#fileName = "TestField2.txt"		#klein
-	#fileName = "TestField4.txt"		#mittel
-	fileName = "TestField3.txt"		#groß
+	fileName = "TestField4.txt"		#mittel
+	#fileName = "TestField3.txt"		#groß
 	
 	TestField = ReadField( fileName )
 
