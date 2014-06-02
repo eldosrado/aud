@@ -43,8 +43,6 @@ except:
 		if color == 'white':
 			print( colorama.Fore.WHITE + colorama.Style.BRIGHT, end='' )
 
-
-
 # GUI stuff
 app = None
 canvas = None
@@ -64,6 +62,7 @@ runs = 1
 # gui color stuff
 LastColor = None
 CurrentColor = None
+lastRoute = []
 
 # findEscape stuff
 field = None
@@ -192,7 +191,7 @@ def GetColor():
 	if LastColor == None:
 		print( "LastColor = None" )
 		color = 1.0
-		# Farbwert = Blau
+		# Farbwert = 100%
 		# Sättigung 100%
 		# Hellwert = 100%
 		LastColor = color
@@ -200,10 +199,10 @@ def GetColor():
 	if CurrentColor == None:
 		print( "CurrentColor = None" )
 		color = LastColor
-		# Farbwert = Blau
-		# Sättigung -5%
+		# Farbwert = -10%
+		# Sättigung 100%
 		# Hellwert = 100%
-		sub = 10.0/100.0
+		sub = 19.0/100.0
 		color = color - sub
 		if color < 0:
 			color = color + 1.0
@@ -265,33 +264,39 @@ def drawRing( pos ):
 	#canvas_Ring.append( nr )
 	pass
 
-def drawRoute( Route ):
+def drawRoute( Route, lastRoute=[] ):
 	global canvas_el
 	debug = True
 	
-	#print( "drawRoute start" )
-	#start = time.clock()
-	
+	print( "drawRoute start" )
+	start = time.clock()
+	DrawIndex = 0
 	# clear previous route
 	if debug == False:
 		canvas.delete( ALL )
 		drawField()
 	else:
-		for el in canvas_Line:
-			canvas.delete( el )
+		#for el in canvas_Line:
+		#	canvas.delete( el )
+		for index in range( len(lastRoute) ):
+			if lastRoute[index] == Route[index]:
+				DrawIndex = index
+				continue
+			canvas.delete(index)
 	
 	#draw lines
-	for index in range( len(Route)-1 ):
+	for index in range( DrawIndex, len(Route)-1 ):
+	#for index in range( len(Route)-1 ):
 		drawLine( Route[index], Route[index+1] )
 	
+	lastRoute = list( Route )
 	#draw dots
 	#for pos in Route:
 	#	drawDot( pos )
 	
-	#end = time.clock()
-	#runtime = end - start
-	#print( "drawRoute end %f" % runtime )
-	pass
+	end = time.clock()
+	runtime = end - start
+	print( "drawRoute runtime %f" % runtime )
 
 def sync():
 	global con
@@ -514,24 +519,24 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	return best
 
 if __name__ == "__main__":
+	debug = False
 	set_color()
 	#fileName = "TestField1.txt"		#spirale
 	#fileName = "TestField2.txt"		#klein
-	fileName = "TestField4.txt"		#mittel
-	#fileName = "TestField3.txt"		#groß
+	#fileName = "TestField4.txt"		#mittel
+	fileName = "TestField3.txt"		#groß
 	
 	TestField = ReadField( fileName )
-
 	init( TestField )
-	'''
-		route = [ (1,1), (2,1), (2,2), (3,2), (4,2), (5,2) ]
-		#print( route )
+	
+	if debug == True:
+		for i in range( 20 ):
+			route = [ (i,1), (i,2) ]
+			drawRoute( route )
+			SetNewRouteColor()
 		
-		drawRoute( route )
-		drawRing( (4,1) )
-		drawRing( (5,1) )
-		drawRing( (6,2) )
-	'''
+		app.mainloop()
+		exit()
 	
 	con = threading.Condition()
 	
