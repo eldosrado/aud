@@ -62,7 +62,7 @@ runs = 1
 # gui color stuff
 LastColor = None
 CurrentColor = None
-lastRoute = []
+
 
 # findEscape stuff
 field = None
@@ -178,6 +178,7 @@ def SetNewRouteColor():
 	
 	canvas_Line = []
 	CurrentColor = None
+	drawRoute.lastRoute = []
 
 def RGBToHTMLColor( rgb_tuple ):
 	""" convert an (R, G, B) tuple to #RRGGBB """
@@ -265,11 +266,15 @@ def drawRing( pos ):
 	#canvas_Ring.append( nr )
 	pass
 
-def drawRoute( Route, lastRoute=[] ):
+def drawRoute( Route ):
+	if not hasattr( drawRoute, "lastRoute" ):
+		lastRoute = drawRoute.lastRoute = []
+	else:
+		lastRoute = drawRoute.lastRoute
+	
 	global canvas_el
 	debug = True
 	
-	print( "drawRoute start" )
 	start = time.clock()
 	DrawIndex = 0
 	# clear previous route
@@ -277,27 +282,35 @@ def drawRoute( Route, lastRoute=[] ):
 		canvas.delete( ALL )
 		drawField()
 	else:
-		#for el in canvas_Line:
-		#	canvas.delete( el )
-		for index in range( len(lastRoute) ):
-			if lastRoute[index] == Route[index]:
-				DrawIndex = index
-				continue
-			canvas.delete(index)
+		lenRoute = len(Route)
+		lenLastR = len(lastRoute)
+		
+		if lenLastR < lenRoute:
+			print( lenLastR, "<", lenRoute )
+			for index in range( len(lastRoute) ):
+				if lastRoute[index] == Route[index]:
+					DrawIndex = index
+					continue
+				canvas.delete(index)
+		else:
+			print( lenLastR, ">", lenRoute )
 	
+	print( "drawRoute 1 runtime %f" % (time.clock() - start) )
 	#draw lines
+	print( DrawIndex, len(Route)-1, len(Route)-1-DrawIndex )
 	for index in range( DrawIndex, len(Route)-1 ):
 	#for index in range( len(Route)-1 ):
 		drawLine( Route[index], Route[index+1] )
-	
-	lastRoute = list( Route )
+	print( "drawRoute 2 runtime %f" % (time.clock() - start) )
+	#lastRoute = list( Route )
+	#del lastRoute[:]
+	#lastRoute.extend( Route )
+	drawRoute.lastRoute = list( Route )
 	#draw dots
 	#for pos in Route:
 	#	drawDot( pos )
 	
-	end = time.clock()
-	runtime = end - start
-	print( "drawRoute runtime %f" % runtime )
+	print( "drawRoute 3 runtime %f" % (time.clock() - start) )
 
 def sync():
 	global con
@@ -435,7 +448,6 @@ def isBetterRoute( pos, Nachbarn, route ):
 	print( "isBetterRoute runtime %f" % (time.clock() - start) )
 	return neueRoute
 
-
 def getBestRoute( result ):
 	bestRoute = []
 	
@@ -493,7 +505,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	set_color('yellow')
 	
 	print( "Entry: ", pos )
-	print( "Route: %d\n" % len(route), route )
+	#print( "Route: %d\n" % len(route), route )
 	
 	# bin ich am Ausgang
 	if isEscape( Field, rowNumber, columnNumber ):
@@ -569,6 +581,8 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	return best
 
 if __name__ == "__main__":
+	#drawRoute.lastRoute = []
+	
 	debug = False
 	set_color()
 	#fileName = "TestField1.txt"		#spirale
