@@ -8,6 +8,7 @@ import threading
 import time
 import numpy as np
 import colorsys
+import pandas as pd
 
 try:
 	from color_console import set_color
@@ -191,7 +192,7 @@ def GetColor():
 	global CurrentColor
 	set_color('blue')
 	if LastColor == None:
-		print( "LastColor = None" )
+		#print( "LastColor = None" )
 		color = 1.0
 		# Farbwert = 100%
 		# Sättigung 100%
@@ -199,7 +200,7 @@ def GetColor():
 		LastColor = color
 	
 	if CurrentColor == None:
-		print( "CurrentColor = None" )
+		#print( "CurrentColor = None" )
 		color = LastColor
 		# Farbwert = -10%
 		# Sättigung 100%
@@ -216,7 +217,7 @@ def GetColor():
 		hexcolor = RGBToHTMLColor( val2 )
 		
 		CurrentColor = hexcolor
-		print( "CurrentColor = %s" % CurrentColor )
+		#print( "CurrentColor = %s" % CurrentColor )
 	
 	set_color()
 	return CurrentColor
@@ -273,35 +274,34 @@ def drawRoute( Route ):
 		lastRoute = drawRoute.lastRoute
 	
 	global canvas_el
-	debug = True
 	
 	start = time.clock()
 	DrawIndex = 0
 	# clear previous route
-	if debug == False:
-		canvas.delete( ALL )
-		drawField()
-	else:
-		lenRoute = len(Route)
-		lenLastR = len(lastRoute)
-		
-		if lenLastR < lenRoute:
-			print( lenLastR, "<", lenRoute )
-			for index in range( len(lastRoute) ):
-				if lastRoute[index] == Route[index]:
-					DrawIndex = index
-					continue
-				canvas.delete(index)
-		else:
-			print( lenLastR, ">", lenRoute )
+
+	lenRoute     = len(Route)
+	lenlastRoute = len(lastRoute)
 	
-	print( "drawRoute 1 runtime %f" % (time.clock() - start) )
+	# if new route is longer, we go probaly the same way
+	# if not, draw a new route
+	if lenlastRoute < lenRoute:
+		print( lenlastRoute, "<", lenRoute )
+		for index in range( len(lastRoute) ):
+			if lastRoute[index] == Route[index]:
+				DrawIndex = index
+				continue
+			canvas.delete(index)
+	else:
+		print( lenlastRoute, ">=", lenRoute )
+		SetNewRouteColor()
+	
+	
 	#draw lines
 	print( DrawIndex, len(Route)-1, len(Route)-1-DrawIndex )
 	for index in range( DrawIndex, len(Route)-1 ):
 	#for index in range( len(Route)-1 ):
 		drawLine( Route[index], Route[index+1] )
-	print( "drawRoute 2 runtime %f" % (time.clock() - start) )
+	
 	#lastRoute = list( Route )
 	#del lastRoute[:]
 	#lastRoute.extend( Route )
@@ -378,14 +378,53 @@ def findEscapeInit( route ):
 		visitedPoints = []
 		posToStartLen = []
 
+def getNeighbors( Field, Pos ):
+	
+	Nachbarn = []
+	#format      (y,x)    >,      <,      ^,      v
+	richtung = (      (0,1), (0,-1), (-1,0),  (1,0) )
+	for n in richtung:
+		temp = tuple( np.add( Pos, n ) )
+		if isFree( Field, temp[0], temp[1] ):
+			Nachbarn.append( temp )
+	return Nachbarn
+
 def getNotVisited( Nachbarn, route ):
 	res = []
+	CurrentPos = route[-1:]
+	LastPos    = route[-2:-1]
+	print( "CurrentPos", CurrentPos )
+	print( "LastPos", LastPos )
+	RouteLen = len( route )
 	for FreierNachbar in Nachbarn:
-		if not visited(FreierNachbar):
-			set_color( 'white' )
-			print( FreierNachbar, "frei => hier weitersuchen" )
+		if FreierNachbar in LastPos:
+			print( FreierNachbar, "besucht (Last) => nicht zurück gehen" )
+		elif FreierNachbar in route:
+			print( FreierNachbar, "besucht (route)=> nicht zurück gehen" )
+		#elif FreierNachbar in posToStartLen:
+		else:
+			#if (25, 64) in CurrentPos:
+			#	printDistToStart()
+			# erstmal ein paar sachen ausgeben
+			if FreierNachbar in posToStartLen:
+				print( "is in" )
+				PosLen = DistToStart[ FreierNachbar ]
+				print( FreierNachbar, "besucht (", PosLen,") => ???", "RouteLen", RouteLen )
+			else:
+				print( "is not in" )
+			
+			print( FreierNachbar, "frei           => hier weitersuchen" )
 			res.append( FreierNachbar )
-			drawRing( FreierNachbar )
+		# elif not visited(FreierNachbar):
+			# set_color( 'white' )
+			# print( FreierNachbar, "frei => hier weitersuchen" )
+			# res.append( FreierNachbar )
+			# drawRing( FreierNachbar )
+			
+			
+			
+			
+			
 		# else:
 			# teil1 = route[:-2]
 			# teil2 = route[-2:]
@@ -398,7 +437,7 @@ def getNotVisited( Nachbarn, route ):
 			# if FreierNachbar in teil1:
 				# set_color( 'green' )
 				# print( FreierNachbar, "besucht => optimieren" )
-	
+	print( "" )
 	return res
 
 def isBetterRoute( pos, Nachbarn, route ):
@@ -411,12 +450,13 @@ def isBetterRoute( pos, Nachbarn, route ):
 	
 	for FreierNachbar in Nachbarn:
 		
-		if FreierNachbar in teil2:
-			set_color( )
-			print( FreierNachbar, "besucht => nicht zurück gehen" )
-			#print( "teil1", teil2 )
+		# if FreierNachbar in teil2:
+			# set_color( )
+			# print( FreierNachbar, "besucht => nicht zurück gehen" )
+			# #print( "teil1", teil2 )
 		
-		elif FreierNachbar in teil1:
+		# else:
+		if FreierNachbar in teil1:
 			set_color( 'green' )
 			print( FreierNachbar, "besucht => optimieren" )
 			print( "route", route )
@@ -461,25 +501,29 @@ def getBestRoute( result ):
 	
 	return bestRoute
 
-def getNeighbors( Field, Pos ):
-	
-	Nachbarn = []
-	#format      (y,x)    >,      <,      ^,      v
-	richtung = (      (0,1), (0,-1), (-1,0),  (1,0) )
-	for n in richtung:
-		temp = tuple( np.add( Pos, n ) )
-		if isFree( Field, temp[0], temp[1] ):
-			Nachbarn.append( temp )
-	return Nachbarn
-
-def SaveDistToStart( pos, route ):
-	print( "SaveDistToStart", pos, "dist", len(route) )
-	DistToStart[ pos ] = len( route )
+#def SaveDistToStart( pos, route ):
+#	print( "SaveDistToStart", pos, "dist", len(route) )
+#	DistToStart[ pos ] = len( route )
 
 def printDistToStart( ):
 	print( "DistToStart" )
-	for key, value in DistToStart.items():
-		print( key, value )
+	
+	#var = DistToStart.items()
+	#print( DistToStart )
+	#print( var )
+	
+	#for key, value in DistToStart.items():
+	#	print( key, value, ",", end='' )
+	#print( "" )
+	print( "now with pandas" )
+	data = pd.Series( DistToStart )
+	
+	
+	pd.set_option('display.max_rows', len(data))
+	print( data.iloc[0:-1] )
+	print( "+++++++++++++++++++" )
+	print( data[:] )
+	
 
 def findEscape( Field, rowNumber, columnNumber, route=() ):
 	global runs
@@ -517,11 +561,12 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		return list(route)
 	
 	# mark this pos as used
-	visit( pos, route )
+	#visit( pos, route )
 	
 	# save distance to start for current position
 	set_color( 'green' )
-	SaveDistToStart( pos, route )
+	#SaveDistToStart( pos, route )
+	DistToStart[ pos ] = len( route )
 	
 	# wenn ich nicht am Ausgang bin,
 	# Freie Nachbarn bestimmen (isFree benutzen)
@@ -562,8 +607,6 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	
 	best = getBestRoute( result )
 	#print( "best", best )
-	print( "Setting a new color for route" )
-	SetNewRouteColor()
 	
 	print( pos, "best (%d):" %len(best) )
 	#if result != [] and pos == result[0]:
@@ -573,6 +616,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		print( "# Ausgang gefunden :)                                 #" )
 		print( "#######################################################" )
 		print( best )
+		SetNewRouteColor()
 		drawRoute( best )
 	
 	#if best == []:
@@ -597,7 +641,6 @@ if __name__ == "__main__":
 		for i in range( 20 ):
 			route = [ (i,1), (i,2) ]
 			drawRoute( route )
-			SetNewRouteColor()
 		
 		app.mainloop()
 		exit()
