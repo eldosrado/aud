@@ -418,6 +418,16 @@ def getBestRoute( result ):
 	
 	return bestRoute
 
+def getNeighbors( Field, Pos ):
+	# format (y,x).    >,      <,      ^,     v
+	Nachbarn = []
+	richtung = ( (0,1), (0,-1), (-1,0), (1,0) )
+	for n in richtung:
+		temp = tuple( np.add( Pos, n ) )
+		if isFree( Field, temp[0], temp[1] ):
+			Nachbarn.append( temp )
+	return Nachbarn
+
 def findEscape( Field, rowNumber, columnNumber, route=() ):
 	global runs
 	
@@ -432,8 +442,6 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	if runs < 0:
 		return list()
 	
-	# format (y,x).    >,      <,      ^,     v
-	richtung = ( (0,1), (0,-1), (-1,0), (1,0) )
 	pos = ( rowNumber, columnNumber )
 	
 	listroute = list( route )
@@ -460,11 +468,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	
 	# wenn ich nicht am Ausgang bin,
 	# Freie Nachbarn bestimmen (isFree benutzen)
-	Nachbarn = []
-	for n in richtung:
-		temp = tuple( np.add( (rowNumber, columnNumber), n ) )
-		if isFree( Field, temp[0], temp[1] ):
-			Nachbarn.append( temp )
+	Nachbarn = getNeighbors( Field, pos )
 	
 	set_color( 'cyan' )
 	print( "Nachbarn", Nachbarn )
