@@ -377,14 +377,14 @@ def findEscapeInit( route ):
 		visitedPoints = []
 		posToStartLen = []
 
-def getNeighbors( Field, Pos ):
+def getNeighbors( Field, Pos, LastPos ):
 	
 	Nachbarn = []
 	#format      (y,x)    >,      <,      ^,      v
 	richtung = (      (0,1), (0,-1), (-1,0),  (1,0) )
 	for n in richtung:
 		temp = tuple( np.add( Pos, n ) )
-		if isFree( Field, temp[0], temp[1] ):
+		if isFree( Field, temp[0], temp[1] ) and temp not in LastPos:
 			Nachbarn.append( temp )
 	return Nachbarn
 
@@ -536,11 +536,16 @@ def printDistToStart( ):
 '''
 def isin( pos, result ):
 	for myvalue in result.values():
-		if pos in myvalue:
+		if pos in list( myvalue ):
 			return True
 	return False
 
 def findEscape( Field, rowNumber, columnNumber, route=() ):
+	# found format| len : route
+	if not hasattr( findEscape, "found" ):
+		found = findEscape.found = {}
+	else:
+		found = findEscape.found
 	global runs
 	if runs < 0:
 		return list()
@@ -562,8 +567,16 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	RouteLen = len( route )
 	drawRoute( route )
 	set_color('yellow')
+	print( "route\n",route )
+	LastPos = route[-2:-1]
+	'''
+	if RouteLen > 1:
+		LastPos = route[-2:-1]
+	else:
+		LastPos = pos
+	'''
+	print( "Entry: ", pos, "LastPos", LastPos )
 	
-	print( "Entry: ", pos )
 	#print( "Route: %d\n" % len(route), route )
 	
 	# bin ich am Ausgang
@@ -575,6 +588,8 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		#saveNewRouteToEscape( route )
 		set_color()
 		isRouteFound = True
+		found[RouteLen] = route
+		findEscape.found = found
 		return list(route)
 	
 	# mark this pos as used
@@ -587,13 +602,29 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	
 	# wenn ich nicht am Ausgang bin,
 	# Freie Nachbarn bestimmen (isFree benutzen)
-	Nachbarn = getNeighbors( Field, pos )
-	
+	Nachbarn = getNeighbors( Field, pos, LastPos )
+	# remove previous point in route
+	'''
+	try:
+		i = Nachbarn.index( LastPos )
+		Nachbarn.pop( i )
+	except:
+		pass
+	'''
 	set_color( 'cyan' )
 	print( "Nachbarn", Nachbarn )
 	
 	# habe alle freien Nachbarn
-	# jetzt überprüfe ich, ob einer der Nachbarn schon besucht wurde
+	
+	if len(Nachbarn) == 1 and Nachbarn[0] in route[-2:-1]:
+		res = -1 * RouteLen
+		DistToStart[ pos ] = res
+		set_color( 'red' )
+		print( "Sackgasste!! res %d" % res )
+		set_color( )
+		return []
+
+	
 	#nichtBesucht = getNotVisited( Nachbarn, route )
 	'''
 	BetterRoute = isBetterRoute( pos, Nachbarn, route )
@@ -605,76 +636,79 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	set_color()
 	best = []
 	# hier die nicht besuchten Punkte abarbeiten
-	for notvisitedPos in Nachbarn:
+	for unvisitedPos in Nachbarn:
 		# Da wir eine rekursion haben, muss immer überprüft werden,
 		# ob dieser Punkt nicht schon über einen anderen Punkt erreicht wurde.
 		# Und wenn doch, dann kann der Punkt nur nochmal überprüft werden,
 		# wenn der aktuelle Weg zu diesem Punkt kürzer war
 		temp = []
-		if notvisitedPos in DistToStart:
-			#print( notvisitedPos, "is in DistToStart" )
-			PosLen = DistToStart[ notvisitedPos ]
+		# unvisited Positionen müssen immer untersucht werden!!! Egal Was
+		if not unvisitedPos in DistToStart:
+			print( unvisitedPos, "ist noch UNbesucht!" )
+			temp = findEscape( Field, unvisitedPos[0], unvisitedPos[1], route )
+			print( "zurück nach", pos, len(temp) )
+			result[unvisitedPos] = temp
+		
+		else:# unvisitedPos in DistToStart:
+			PosLen = DistToStart[ unvisitedPos ]
 			
-			if RouteLen < PosLen:# and notvisitedPos not in RouteToEscape:
-				#if not isin( notvisitedPos, result ):
-				#if not notvisitedPos in list( result.values() ):
-				#1405
-				if isRouteFound == True and isin( notvisitedPos, result ):
-					pass
-					'''
-					set_color( 'red' )
-					print( "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-					print( "result", result )
-					set_color( 'green' )
-					if isin( notvisitedPos, result ):
-						print( notvisitedPos, "is in result" )
-					else:
-						print( notvisitedPos, "is not in result" )
-					'''
-				else:
-					print( notvisitedPos, "RouteLen  < PosLen ", RouteLen , " <", PosLen, "=> hier weiter suchen")
-					temp = findEscape( Field, notvisitedPos[0], notvisitedPos[1], route )
-					print( "zurück nach", pos, len(temp) )
-					result[notvisitedPos] = temp
-				
+			# Solange wir keinen Ausgang kennen, lassen wir alle schon besuchten Punkte aus.
+			# Da diese offensichtlich nicht zum Ausgang führen
+			if isRouteFound == False:
+				print( unvisitedPos, "kein Weg zum Ausgang bekannt => auslassen!!" )
+				pass
 			else:
-				# Wenn dieser Punkt schon mal besucht wurde, muss überprüft werden,
-				# ob der aktuelle Weg im "Kreis" gegangen ist.
-				print( notvisitedPos, "RouteLen >= PosLen ", RouteLen , ">=", PosLen, "=> nicht zurück gehen" )
-				# if notvisitedPos in route[:-2]:
-					# print( "im kreis gegangen" )
-					# # markieren ob wir im Kreis gegangen sind
-					# result[notvisitedPos] = notvisitedPos
-		else:
-			print( notvisitedPos, "ist noch UNbesucht!" )
-			temp = findEscape( Field, notvisitedPos[0], notvisitedPos[1], route )
-			print( "zurück nach", pos, len(temp) )
-			result[notvisitedPos] = temp
-		'''
-		if not visited(notvisitedPos):
-			temp = findEscape( Field, notvisitedPos[0], notvisitedPos[1], route )
-			result[notvisitedPos] = temp
-			print( "zurück nach", pos, len(temp) )
-			#if temp != None:
-			#	# bessere Route bekommen
-			#	sync()
-			#	drawRoute( route )
-		else:
-			set_color( 'red' )
-			print( notvisitedPos, "dieser Punkt wurde schon besucht" )
-			set_color()
-			result[notvisitedPos] = []
-		'''
+				# Wenn wir einen Weg zum Ausgang kennen, dann untersuchen wir nur Punkte
+				# wo die aktuelle Länge der Route kleiner ist als
+				# die vorherige Länge zu diesem Punkt.
+				# Und wir lassen alle Punkte aus, die in dem Weg zum Ausgang sind.
+				
+				# Dann machen wir das mal.
+				# als Erstes überprüfen wir die Länge
+				if RouteLen < PosLen:
+					# So die Länge ist größer als unsere Route
+					# Dann müssen wir Überprüfen, ob dieser Punkt im Ausgangsweg ist
+					#if not isin( unvisitedPos, result ):
+					if not isin( unvisitedPos, found ):
+						# Dieser Punkt ist nicht im Ausgangsweg
+						'''
+						Das funktioniert nicht so wie es jetzt ist.
+						Wenn ich einen Seitenroute auswähle und nur mit der Route starte,
+						kenn diese nicht den Weg zum Ausgang!!!
+						Das heißt die nächste Instanz sucht und sucht und sucht.
+						Dabei werden zwar immer bessere Weg zum Ausgang gefunden, aber das Dauert!!!
+						
+						Ich muss also entweder global den Weg zum Ausgang bereitstellen,
+						oder es als Route übergeben
+						oder einen zusätzlichen Parameter zur funktuion hinzufügen
+						oder eine Statische Variable. <--
+						'''
+						print( unvisitedPos, "is not in" )
+						print( found )
+						print( unvisitedPos, "RouteLen  < PosLen ", RouteLen , " <", PosLen, "=> hier weiter suchen")
+						temp = findEscape( Field, unvisitedPos[0], unvisitedPos[1], route )
+						print( "zurück nach", pos, len(temp) )
+						result[unvisitedPos] = temp
+					
+				else:
+					# Wenn dieser Punkt schon mal besucht wurde, muss überprüft werden,
+					# ob der aktuelle Weg im "Kreis" gegangen ist.
+					print( unvisitedPos, "RouteLen >= PosLen ", RouteLen , ">=", PosLen, "=> nicht zurück gehen" )
+					# if unvisitedPos in route[:-2]:
+						# print( "im kreis gegangen" )
+						# # markieren ob wir im Kreis gegangen sind
+						# result[unvisitedPos] = unvisitedPos
 	
 	best = getBestRoute( result )
 	print( "best", best )
 	print( pos, "best (%d):" %len(best) )
 	
 	# if nothing is found, mark this pos as do not visit again
-	if len(best) == 0:
-		res = -1 * RouteLen
-		DistToStart[ pos ] = res
-		print( "res %d" % res )
+	if isRouteFound == True:
+		if len(best) == 0:
+			res = -1 * RouteLen
+			DistToStart[ pos ] = res
+			print( "res %d" % res )
 	
 	if best != [] and isinstance( best, list ) and pos == best[0]:
 		set_color('green')
