@@ -208,8 +208,10 @@ def GetColor():
 		color = color - sub
 		if color < 0:
 			color = color + 1.0
-		
-		val = colorsys.hsv_to_rgb( color, 1.0, 1.0 )
+		if isRouteFound == False:
+			val = colorsys.hsv_to_rgb( color, 0.5, 1.0 )
+		else:
+			val = colorsys.hsv_to_rgb( color, 1.0, 1.0 )
 		LastColor = color
 		
 		val2 = [ int( el * 255 ) for el in val ]
@@ -222,6 +224,7 @@ def GetColor():
 	return CurrentColor
 
 def drawField( ):
+	canvas.delete( ALL )
 	pad = 2
 	for y in range( len(field) ):
 		for x in range( len(field[0]) ):
@@ -284,19 +287,19 @@ def drawRoute( Route ):
 	# if new route is longer, we go probaly the same way
 	# if not, draw a new route
 	if lenlastRoute < lenRoute:
-		print( lenlastRoute, "<", lenRoute )
+		#print( lenlastRoute, "<", lenRoute )
 		for index in range( len(lastRoute) ):
 			if lastRoute[index] == Route[index]:
 				DrawIndex = index
 				continue
 			canvas.delete(index)
 	else:
-		print( lenlastRoute, ">=", lenRoute )
+		#print( lenlastRoute, ">=", lenRoute )
 		SetNewRouteColor()
 	
 	
 	#draw lines
-	print( DrawIndex, len(Route)-1, len(Route)-1-DrawIndex )
+	#print( DrawIndex, len(Route)-1, len(Route)-1-DrawIndex )
 	for index in range( DrawIndex, len(Route)-1 ):
 	#for index in range( len(Route)-1 ):
 		drawLine( Route[index], Route[index+1] )
@@ -309,7 +312,7 @@ def drawRoute( Route ):
 	#for pos in Route:
 	#	drawDot( pos )
 	
-	print( "drawRoute 3 runtime %f" % (time.clock() - start) )
+	#print( "drawRoute 3 runtime %f" % (time.clock() - start) )
 
 def sync():
 	global con
@@ -534,11 +537,89 @@ def printDistToStart( ):
 	pd.set_option('display.max_rows', len(data))
 	print( data[:] )
 '''
-def isin( pos, result ):
-	for myvalue in result.values():
-		if pos in list( myvalue ):
+def isin( pos, found ):
+	for value in found.values():
+		if pos in list( value ):
 			return True
 	return False
+
+def getFound( pos, found ):
+	for value in found.values():
+		tmpList = list( value )
+		if pos in tmpList:
+			return tmpList
+
+def NeuerWegZumAusgang( route, found, unvisitedPos, pos ):
+	set_color( 'yellow' )
+	print( "Bestimme neuen Weg zum Ausgang!" )
+	print( "next", unvisitedPos, "current", pos )
+	print( "route" );print( route, "\n" )
+	print( "found" );print( found, "\n" )
+	
+	# current = pos
+	# next = unvisitedPos
+	# Schritt 1.
+	# current solange verschieben, bis current auf found ist
+	partB = []
+	currentIndex = route.index( pos )
+	NextIndex = found.index( unvisitedPos )
+	
+	while pos not in found:
+		# current in B eintragen
+		print( "verschiebe current einen zurück" )
+		partB.append( pos )
+		
+		# index von current bestimmen
+		currentIndex = route.index( pos )
+		# einen zurückgehen
+		if currentIndex > 0:
+			currentIndex = currentIndex - 1
+		else:
+			raise Exception('index out of range', 'wtf')
+		# und neue Position holen
+		pos = route[currentIndex]
+	
+	
+	
+	print( "currentIndex" , currentIndex)
+	print( "NextIndex   " , NextIndex)
+	#print( "part" );print( part )
+	if currentIndex < NextIndex:
+		print( "currentIndex < NextIndex" )
+		partA = found[:currentIndex+1]
+		partC = found[NextIndex:]
+		print( "Neuer Weg:\n" )
+		
+		print( "\nPart A len %d" %len(partA)  )
+		print( partA )
+		
+		print( "\nPart B len %d" %len(partB)  )
+		print( partB )
+		
+		print( "\nPart C len %d" %len(partC)  )
+		print( partC )
+	else:
+		print( "currentIndex >= NextIndex" )
+		partA = found[:NextIndex]
+		partC = found[currentIndex:]
+		print( "Neuer Weg:\n" )
+		
+		print( "\nPart A len %d" %len(partA)  )
+		print( partA )
+		
+		print( "\nPart B len %d" %len(partB)  )
+		print( partB )
+		
+		print( "\nPart C len %d" %len(partC)  )
+		print( partC )
+	
+	new = []
+	new.extend( partA )
+	new.extend( partB )
+	new.extend( partC )
+	
+	return new
+	pass
 
 def findEscape( Field, rowNumber, columnNumber, route=() ):
 	# found format| len : route
@@ -567,7 +648,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	RouteLen = len( route )
 	drawRoute( route )
 	set_color('yellow')
-	print( "route\n",route )
+	#print( "route\n",route )
 	LastPos = route[-2:-1]
 	'''
 	if RouteLen > 1:
@@ -588,7 +669,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		#saveNewRouteToEscape( route )
 		set_color()
 		isRouteFound = True
-		found[RouteLen] = route
+		found[1] = route
 		findEscape.found = found
 		return list(route)
 	
@@ -684,12 +765,53 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 						oder eine Statische Variable. <--
 						'''
 						print( unvisitedPos, "is not in" )
-						print( found )
+						#print( found )
 						print( unvisitedPos, "RouteLen  < PosLen ", RouteLen , " <", PosLen, "=> hier weiter suchen")
 						temp = findEscape( Field, unvisitedPos[0], unvisitedPos[1], route )
 						print( "zurück nach", pos, len(temp) )
 						result[unvisitedPos] = temp
-					
+					else:
+						# wir haben einen Punkt gefunden, der zum Ausgang führt und kürzer ist!
+						FoundRoute = getFound( unvisitedPos, found )
+						#print( "FoundRoute", FoundRoute )
+						
+						unvisitedPosIndex = FoundRoute.index( unvisitedPos )
+						FoundRouteLen = len( FoundRoute )
+						
+						FoundDistToEsc = FoundRouteLen - unvisitedPosIndex
+						NewLen = RouteLen + FoundDistToEsc
+						if NewLen < FoundRouteLen:
+							set_color( 'blue' )
+							print( "Optimiere" )
+							
+							SetNewRouteColor()
+							drawRoute( route )
+							sync()
+							
+							set_color( 'red' )
+							print( "-----------------------------------------------------------------" )
+							print( pos, "hier bin ich gerade" )
+							print( unvisitedPos, "unvisitedPos")
+							print(  "unvisitedPosIndex", unvisitedPosIndex, \
+									"FoundRouteLen", FoundRouteLen, \
+									"FoundDistToEsc", FoundDistToEsc, \
+									"RouteLen", RouteLen )
+							print( NewLen, FoundRouteLen )
+							set_color()
+							# und jetzt neue Route zum Ausgang basteln
+							
+							new = NeuerWegZumAusgang( route, FoundRoute, unvisitedPos, pos )
+							
+							
+							found[1] = new
+							findEscape.found = found
+							
+							print( "\nnew len %d" %len(new) );
+							print( new )
+							
+							SetNewRouteColor()
+							drawRoute( new )
+							sync()
 				else:
 					# Wenn dieser Punkt schon mal besucht wurde, muss überprüft werden,
 					# ob der aktuelle Weg im "Kreis" gegangen ist.
@@ -700,7 +822,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 						# result[unvisitedPos] = unvisitedPos
 	
 	best = getBestRoute( result )
-	print( "best", best )
+	#print( "best", best )
 	print( pos, "best (%d):" %len(best) )
 	
 	# if nothing is found, mark this pos as do not visit again
@@ -710,14 +832,17 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 			DistToStart[ pos ] = res
 			print( "res %d" % res )
 	
-	if best != [] and isinstance( best, list ) and pos == best[0]:
+	#if best != [] and isinstance( best, list ) and pos == best[0]:
+	if isRouteFound == True and pos == found[1][0]:
 		set_color('green')
 		print( "#######################################################" )
 		print( "# Ausgang gefunden :)                                 #" )
 		print( "#######################################################" )
 		print( best )
+		drawField()
 		SetNewRouteColor()
-		drawRoute( best )
+		drawRoute( found )
+		drawRoute( found )
 	
 	return best
 
