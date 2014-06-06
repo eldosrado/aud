@@ -882,15 +882,18 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 			print( "res %d" % res )
 	
 	#if best != [] and isinstance( best, list ) and pos == best[0]:
-	if isRouteFound == True and pos == found[1][0]:
-		set_color('green')
-		print( "#######################################################" )
-		print( "# Ausgang gefunden :)                                 #" )
-		print( "#######################################################" )
-		print( best )
-		#drawField()
-		SetNewRouteColor()
-		drawRoute( found )
+	
+	if isRouteFound == True:
+		aaa = found[1]
+		if pos == aaa[0]:
+			set_color('green')
+			print( "#######################################################" )
+			print( "# Ausgang gefunden :) %4d                            #" % len(aaa) )
+			print( "#######################################################" )
+			print( aaa )
+			#drawField()
+			SetNewRouteColor()
+			drawRoute( found )
 	
 	return best
 
