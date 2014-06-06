@@ -209,7 +209,7 @@ def GetColor():
 		if color < 0:
 			color = color + 1.0
 		if isRouteFound == False:
-			val = colorsys.hsv_to_rgb( color, 0.5, 1.0 )
+			val = colorsys.hsv_to_rgb( color, 0.75, 1.0 )
 		else:
 			val = colorsys.hsv_to_rgb( color, 1.0, 1.0 )
 		LastColor = color
@@ -764,13 +764,15 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 						oder einen zusätzlichen Parameter zur funktuion hinzufügen
 						oder eine Statische Variable. <--
 						'''
-						print( unvisitedPos, "is not in" )
+						#print( unvisitedPos, "is not in" )
 						#print( found )
 						print( unvisitedPos, "RouteLen  < PosLen ", RouteLen , " <", PosLen, "=> hier weiter suchen")
 						temp = findEscape( Field, unvisitedPos[0], unvisitedPos[1], route )
 						print( "zurück nach", pos, len(temp) )
 						result[unvisitedPos] = temp
 					else:
+						pass
+						'''
 						# wir haben einen Punkt gefunden, der zum Ausgang führt und kürzer ist!
 						FoundRoute = getFound( unvisitedPos, found )
 						#print( "FoundRoute", FoundRoute )
@@ -782,7 +784,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 						NewLen = RouteLen + FoundDistToEsc
 						if NewLen < FoundRouteLen:
 							set_color( 'blue' )
-							print( "Optimiere" )
+							print( "Optimiere 1" )
 							
 							SetNewRouteColor()
 							drawRoute( route )
@@ -812,14 +814,61 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 							SetNewRouteColor()
 							drawRoute( new )
 							sync()
-				else:
+						'''
+				else:	# RouteLen >= PosLen:
 					# Wenn dieser Punkt schon mal besucht wurde, muss überprüft werden,
 					# ob der aktuelle Weg im "Kreis" gegangen ist.
 					print( unvisitedPos, "RouteLen >= PosLen ", RouteLen , ">=", PosLen, "=> nicht zurück gehen" )
-					# if unvisitedPos in route[:-2]:
-						# print( "im kreis gegangen" )
-						# # markieren ob wir im Kreis gegangen sind
-						# result[unvisitedPos] = unvisitedPos
+					if isin( unvisitedPos, found ):
+						set_color( 'green' )
+						print( "Optimiere 2" )
+						# wir haben einen Punkt gefunden, der zum Ausgang führt und kürzer ist!
+						FoundRoute = getFound( unvisitedPos, found )
+						print( "FoundRoute", FoundRoute )
+						
+						unvisitedPosIndex = FoundRoute.index( unvisitedPos )
+						FoundRouteLen = len( FoundRoute )
+						
+						FoundDistToEsc = FoundRouteLen - unvisitedPosIndex
+						NewLen = RouteLen + FoundDistToEsc
+						print( pos, "hier bin ich gerade" )
+						print( unvisitedPos, "nextPos" )
+						print( "unvisitedPosIndex", unvisitedPosIndex )
+						print( "FoundRouteLen", FoundRouteLen )
+						print( "FoundDistToEsc", FoundDistToEsc )
+						print( "NewLen", NewLen )
+						
+						if NewLen < FoundRouteLen:
+							
+							SetNewRouteColor()
+							drawRoute( route )
+							sync()
+							
+							set_color( 'red' )
+							print( "-----------------------------------------------------------------" )
+							print( pos, "hier bin ich gerade" )
+							print( unvisitedPos, "unvisitedPos")
+							print(  "unvisitedPosIndex", unvisitedPosIndex, \
+									"FoundRouteLen", FoundRouteLen, \
+									"FoundDistToEsc", FoundDistToEsc, \
+									"RouteLen", RouteLen )
+							print( NewLen, FoundRouteLen )
+							set_color()
+							# und jetzt neue Route zum Ausgang basteln
+							
+							new = NeuerWegZumAusgang( route, FoundRoute, unvisitedPos, pos )
+							
+							
+							found[1] = new
+							findEscape.found = found
+							
+							print( "\nnew len %d" %len(new) );
+							print( new )
+							
+							SetNewRouteColor()
+							drawRoute( new )
+							sync()
+					set_color()
 	
 	best = getBestRoute( result )
 	#print( "best", best )
@@ -839,9 +888,8 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		print( "# Ausgang gefunden :)                                 #" )
 		print( "#######################################################" )
 		print( best )
-		drawField()
+		#drawField()
 		SetNewRouteColor()
-		drawRoute( found )
 		drawRoute( found )
 	
 	return best
