@@ -68,7 +68,8 @@ CurrentColor = None
 # findEscape stuff
 field = None
 visitedPoints=[]
-DistToStart = {}
+DistToStart  = {}
+DistToEscape = {}
 isRouteFound = False
 #findEscape_runs = 0
 #run = False
@@ -313,6 +314,7 @@ def drawRoute( Route ):
 	#	drawDot( pos )
 	
 	#print( "drawRoute 3 runtime %f" % (time.clock() - start) )
+	pass
 
 def sync():
 	global con
@@ -326,7 +328,10 @@ def sync():
 	runs -= 1
 	con.release()
 
-def inField( Field, rowNumber, columnNumber ):
+def inField( Field, pos ):
+	rowNumber    = pos[0]
+	columnNumber = pos[1]
+
 	LeftBorder = 0
 	RightBorder = len(Field[0])-1
 	TopBorder = 0
@@ -336,15 +341,21 @@ def inField( Field, rowNumber, columnNumber ):
 		return False
 	return True
 
-def isFree( Field, rowNumber, columnNumber ):
-	if not inField( Field, rowNumber, columnNumber ):
+def isFree( Field, pos ):
+	rowNumber    = pos[0]
+	columnNumber = pos[1]
+
+	if not inField( Field, pos ):
 		return False
 	if Field[rowNumber][columnNumber] == filledMarker:
 		return False
 	return True
 
-def isEscape( Field, rowNumber, columnNumber ):
-	if not inField( Field, rowNumber, columnNumber ):
+def isEscape( Field, pos ):
+	rowNumber    = pos[0]
+	columnNumber = pos[1]
+	
+	if not inField( Field, pos ):
 		return False
 	if Field[rowNumber][columnNumber] != EscapeMarker:
 		return False
@@ -386,9 +397,9 @@ def getNeighbors( Field, Pos, LastPos ):
 	#format      (y,x)    >,      <,      ^,      v
 	richtung = (      (0,1), (0,-1), (-1,0),  (1,0) )
 	for n in richtung:
-		temp = tuple( np.add( Pos, n ) )
-		if isFree( Field, temp[0], temp[1] ) and temp not in LastPos:
-			Nachbarn.append( temp )
+		tempPos = tuple( np.add( Pos, n ) )
+		if isFree( Field, tempPos ) and tempPos not in LastPos:
+			Nachbarn.append( tempPos )
 	return Nachbarn
 
 def getNotVisited( Nachbarn, route ):
@@ -621,7 +632,7 @@ def NeuerWegZumAusgang( route, found, unvisitedPos, pos ):
 	return new
 	pass
 
-def findEscape( Field, rowNumber, columnNumber, route=() ):
+def findEscape( Field, pos=(1,1), route=() ):
 	# found format| len : route
 	if not hasattr( findEscape, "found" ):
 		found = findEscape.found = {}
@@ -638,8 +649,6 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	sync()
 	if runs < 0:
 		return list()
-	
-	pos = ( rowNumber, columnNumber )
 	
 	listroute = list( route )
 	listroute.append( pos )
@@ -661,7 +670,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 	#print( "Route: %d\n" % len(route), route )
 	
 	# bin ich am Ausgang
-	if isEscape( Field, rowNumber, columnNumber ):
+	if isEscape( Field, pos ):
 		global isRouteFound
 		set_color('green')
 		print( pos, "Ausgang gefunden len %d" %len(route) )
@@ -726,7 +735,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 		# unvisited Positionen müssen immer untersucht werden!!! Egal Was
 		if not unvisitedPos in DistToStart:
 			print( unvisitedPos, "ist noch UNbesucht!" )
-			temp = findEscape( Field, unvisitedPos[0], unvisitedPos[1], route )
+			temp = findEscape( Field, unvisitedPos, route )
 			print( "zurück nach", pos, len(temp) )
 			result[unvisitedPos] = temp
 		
@@ -767,7 +776,7 @@ def findEscape( Field, rowNumber, columnNumber, route=() ):
 						#print( unvisitedPos, "is not in" )
 						#print( found )
 						print( unvisitedPos, "RouteLen  < PosLen ", RouteLen , " <", PosLen, "=> hier weiter suchen")
-						temp = findEscape( Field, unvisitedPos[0], unvisitedPos[1], route )
+						temp = findEscape( Field, unvisitedPos, route )
 						print( "zurück nach", pos, len(temp) )
 						result[unvisitedPos] = temp
 					else:
@@ -920,7 +929,7 @@ if __name__ == "__main__":
 	
 	con = threading.Condition()
 	
-	findEscapeThread = threading.Thread( target = findEscape, args=(TestField, 1, 1) )
+	findEscapeThread = threading.Thread( target = findEscape, args=(TestField, (1, 1) ) )
 	findEscapeThread.start()
 	
 	
