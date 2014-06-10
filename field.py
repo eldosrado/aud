@@ -644,7 +644,7 @@ def getCurrentRoute( PreviousRoute, CurrenPos ):
 	#route = tuple( listroute )
 	route = list( listroute )
 
-def findEscape( Field, pos=(1,1), route=() ):
+def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	"""
 	Call this function with a field to search in.
 	Use ReadField( fileName ) to get a proper field.
@@ -707,6 +707,7 @@ def findEscape( Field, pos=(1,1), route=() ):
 		
 		#return list(route)
 		return 0
+	#####################################################################################
 	
 	"""
 	Nicht trivialer Fall der Rekursion
@@ -715,6 +716,23 @@ def findEscape( Field, pos=(1,1), route=() ):
 	Es müssen alle direkten Nachbar untersucht werden, ob nicht diese zum Ausgang führen.
 	"""
 	Nachbarn = getNeighbors( Field, pos, LastPos )
+	set_color( 'cyan' )
+	print( pos, "Nachbarn", Nachbarn )
+	#####################################################################################
+	
+	"""
+	Von nun an muss unterschieden werden ob ein Ausgang gefunden wurde oder nicht.
+	
+	Für den Fall, dass noch kein Weg gefunden wurde, dann wird für diese Position die 
+	Entfernung zum Start der Suche eingetragen. Wenn eine andere Instanz wieder zu 
+	dieser Position gelangt, wird nicht weiter gesucht. 
+	Das verhindert das wiederholte Suchen in Sackgassen!
+	"""
+	if isRouteFound == False:
+		DistToStart[ pos ] = RouteLen - 1
+		print( pos, "Dist to Start", RouteLen - 1, "saved" )
+	else:
+		print( pos, "Dist to Start", RouteLen - 1, "purged" )
 	
 	# mark this pos as used
 	#visit( pos, route )
@@ -722,7 +740,7 @@ def findEscape( Field, pos=(1,1), route=() ):
 	# save distance to start for current position
 	set_color( 'green' )
 	#SaveDistToStart( pos, route )
-	DistToStart[ pos ] = RouteLen
+	
 	
 	# wenn ich nicht am Ausgang bin,
 	# Freie Nachbarn bestimmen (isFree benutzen)
@@ -735,18 +753,16 @@ def findEscape( Field, pos=(1,1), route=() ):
 	except:
 		pass
 	'''
-	set_color( 'cyan' )
-	print( "Nachbarn", Nachbarn )
 	
 	# habe alle freien Nachbarn
 	
-	if len(Nachbarn) == 1 and Nachbarn[0] in route[-2:-1]:
-		res = -1 * RouteLen
-		DistToStart[ pos ] = res
-		set_color( 'red' )
-		print( "Sackgasste!! res %d" % res )
-		set_color( )
-		return []
+	# if len(Nachbarn) == 1 and Nachbarn[0] in route[-2:-1]:
+		# res = -1 * RouteLen
+		# DistToStart[ pos ] = res
+		# set_color( 'red' )
+		# print( "Sackgasste!! res %d" % res )
+		# set_color( )
+		# return []
 
 	
 	#nichtBesucht = getNotVisited( Nachbarn, route )
@@ -757,18 +773,6 @@ def findEscape( Field, pos=(1,1), route=() ):
 		print( "there is a better Route!!!!" )
 	'''
 
-
-
-
-
-	"""
-	Nun muss unterschieden werden ob ein Ausgang gefunden wurde oder nicht.
-	Für den Fall, dass noch kein weg gefunden wurde, dann:
-	
-	Wenn kein Nachbar zum Ausgang führt, dann wird für diese Position die Entfernung zum 
-	Start der Suche eingetragen. Wenn eine andere Instanz wieder zu dieser Position 
-	gelangt, wird nicht weiter gesucht.
-	"""
 	#####################################################################################
 	"""
 	Für den Fall, dass ein Weg gefunden wurde, dann:
