@@ -914,13 +914,33 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 			sizex, sizey = terminalsize.get_terminal_size()
 			BL = "# "
 			BR = " #"
-			sizex = sizex - len(BL) - len(BR)
+			sizex_mid = sizex - len(BL) - len(BR)
 			
 			
 			set_color('green')
 			print( "#" * sizex )
-			print( BL + "Ausgang gefunden".ljust( sizex ) + BR )
+			print( BL + "Ausgang gefunden".ljust( sizex_mid ) + BR )
 			# print route
+			
+			zeile = ""
+			for element in found:
+				# touple in string umwandeln
+				el_string = str( element ) + ", "
+				el_string = el_string.ljust( 10 )
+				# solange zeile nicht voll ist, el anhängen
+				if len( zeile ) + len( el_string ) < sizex_mid:
+					zeile += el_string
+				# sonst zeile ausgeben und zeile weiter füllen
+				else:
+					# zeile rechts mit whitespace auffüllen
+					print( BL + zeile.ljust( sizex_mid ) + BR )
+					zeile = el_string
+			else:
+				# wenn noch nicht alles ausgegeben wurde
+				# den rest auch noch ausgeben
+				if zeile != "":
+					print( BL + zeile.ljust( sizex_mid ) + BR )
+			
 			print( "#" * sizex )
 			print( found )
 			
