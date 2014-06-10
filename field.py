@@ -632,41 +632,55 @@ def NeuerWegZumAusgang( route, found, unvisitedPos, pos ):
 	return new
 	pass
 
+def getCurrentRoute( PreviousRoute, CurrenPos ):
+	"""
+	"""
+	NewRoute = list( PreviousRoute )
+	NewRoute.append( CurrenPos )
+	
+	return NewRoute
+	listroute = list( route )
+	listroute.append( pos )
+	#route = tuple( listroute )
+	route = list( listroute )
+
 def findEscape( Field, pos=(1,1), route=() ):
+	"""
+	Call this function with a field to search in.
+	Use ReadField( fileName ) to get a proper field.
+	
+	returning a list of tuple with the best route to Escape.
+	
+	Internal::
+	returning distance to Escape
+	"""
+	
 	# found format| len : route
 	if not hasattr( findEscape, "found" ):
 		found = findEscape.found = {}
 	else:
 		found = findEscape.found
 	global runs
+	
+	findEscapeInit( PreviousRoute )
+	
+	# Sync with GUI-Thread
+	# Wait for runs to be not 0
+	# For debugging purposses, all instances will exit if runs is < 0
 	if runs < 0:
 		return list()
-	
-	findEscapeInit( route )
-	
-	#sync thread
-	# wait for runs to be not 0
 	sync()
 	if runs < 0:
 		return list()
 	
-	listroute = list( route )
-	listroute.append( pos )
-	#route = tuple( listroute )
-	route = list( listroute )
+	route = getCurrentRoute( PreviousRoute, pos )
 	RouteLen = len( route )
 	drawRoute( route )
-	set_color('yellow')
-	#print( "route\n",route )
 	LastPos = route[-2:-1]
-	'''
-	if RouteLen > 1:
-		LastPos = route[-2:-1]
-	else:
-		LastPos = pos
-	'''
-	print( "Entry: ", pos, "LastPos", LastPos )
 	
+	set_color('yellow')
+	print( "Entry: ", pos, "LastPos", LastPos )
+	#print( "route\n",route )
 	#print( "Route: %d\n" % len(route), route )
 	
 	# bin ich am Ausgang
