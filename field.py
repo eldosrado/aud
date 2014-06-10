@@ -708,6 +708,14 @@ def findEscape( Field, pos=(1,1), route=() ):
 		#return list(route)
 		return 0
 	
+	"""
+	Nicht trivialer Fall der Rekursion
+	
+	Die aktuelle Position ist nicht der Ausgang.
+	Es müssen alle direkten Nachbar untersucht werden, ob nicht diese zum Ausgang führen.
+	"""
+	Nachbarn = getNeighbors( Field, pos, LastPos )
+	
 	# mark this pos as used
 	#visit( pos, route )
 	
@@ -718,7 +726,7 @@ def findEscape( Field, pos=(1,1), route=() ):
 	
 	# wenn ich nicht am Ausgang bin,
 	# Freie Nachbarn bestimmen (isFree benutzen)
-	Nachbarn = getNeighbors( Field, pos, LastPos )
+	
 	# remove previous point in route
 	'''
 	try:
@@ -748,6 +756,29 @@ def findEscape( Field, pos=(1,1), route=() ):
 		#print( BetterRoute )
 		print( "there is a better Route!!!!" )
 	'''
+
+
+
+
+
+	"""
+	Nun muss unterschieden werden ob ein Ausgang gefunden wurde oder nicht.
+	Für den Fall, dass noch kein weg gefunden wurde, dann:
+	
+	Wenn kein Nachbar zum Ausgang führt, dann wird für diese Position die Entfernung zum 
+	Start der Suche eingetragen. Wenn eine andere Instanz wieder zu dieser Position 
+	gelangt, wird nicht weiter gesucht.
+	"""
+	#####################################################################################
+	"""
+	Für den Fall, dass ein Weg gefunden wurde, dann:
+	
+	Wenn ein Nachbar im Weg zum Ausgang ist, dann gibt es vielleicht einen kürzeren Weg.
+	Sollte das so sein.
+	
+	Wenn ein Nachbar nicht im Weg zum Ausgang ist, dann wird überprüft, ob für diesen
+	Nachbarn schon eine Entfernung zum Ausgang angegeben wurde.
+	"""
 	result = {}
 	set_color()
 	best = []
