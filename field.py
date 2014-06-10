@@ -683,18 +683,30 @@ def findEscape( Field, pos=(1,1), route=() ):
 	#print( "route\n",route )
 	#print( "Route: %d\n" % len(route), route )
 	
-	# bin ich am Ausgang
+	"""
+	Trivialer Fall bei einer Rekursion.
+	
+	Hier: Ein Ausgang gefunden wurde gefunden
+	Wenn das passiert, wird der Weg zum Ausgang als Attribut in diese Funktion gespeichert.
+	Damit haben alle Instanzen Zugriff auf diesen Weg.
+	
+	Hinweis: Wenn eine andere Instanz einen kürzeren Weg zum Ausgang findet,
+	wird dieser neue Weg gespeichert!
+	"""
 	if isEscape( Field, pos ):
 		global isRouteFound
+		
 		set_color('green')
 		print( pos, "Ausgang gefunden len %d" %len(route) )
 		print( route )
-		#saveNewRouteToEscape( route )
 		set_color()
+		
 		isRouteFound = True
 		found[1] = route
-		findEscape.found = found
-		return list(route)
+		findEscape.found = route
+		
+		#return list(route)
+		return 0
 	
 	# mark this pos as used
 	#visit( pos, route )
