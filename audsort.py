@@ -48,6 +48,71 @@ def SelectionSort( workList ):
 	
 	return workList
 
+def mergeSort( workList ):
+	def merge( LeftList, RightList ):
+		newList = []
+		Lindex = Rindex = 0
+		# mix LeftList & RightList
+		while Lindex<len(LeftList) and Rindex<len(RightList):
+			if LeftList[Lindex] < RightList[Rindex]:
+				newList.append( LeftList[Lindex] )
+				Lindex += 1
+			else:
+				newList.append( RightList[Rindex] )
+				Rindex += 1
+		# append if LeftList.len > RightList.len
+		while Lindex<len(LeftList):
+			newList.append( LeftList[Lindex] )
+			Lindex += 1
+		# append if LeftList.len < RightList.len
+		while Rindex<len(RightList):
+			newList.append( RightList[Rindex] )
+			Rindex += 1
+		return newList
+	
+	if len(workList) <= 1:
+		return workList
+	else:
+		mid = int( len(workList)/2 )
+		
+		LeftList  = mergeSort( workList[:mid] )
+		RightList = mergeSort( workList[mid:] )
+		
+		return merge( LeftList, RightList )
+
+def quickSort( workList ):
+	def recQuickSort( workList, First, Last ):
+		if First >= Last:
+			return
+		else:
+			Pivot = workList[First]
+			PivotIndex = partitionList( workList, First, Last )
+			
+			recQuickSort( workList, First, PivotIndex-1 )
+			recQuickSort( workList, PivotIndex+1, Last )
+	
+	def partitionList( workList, First, Last):
+		pivot = workList[First]
+		left = First + 1
+		right = Last
+		while left <= right:
+			while left <= right and workList[left] <= pivot:
+				left += 1
+			
+			while right >= left and workList[right] >= pivot:
+				right -= 1
+			
+			if left < right:
+				workList[left], workList[right] = workList[right], workList[left]
+		
+		if right != First:
+			workList[First] = workList[right]
+			workList[right] = pivot
+			#workList[First], workList[right] = workList[right], pivot
+		return right
+	recQuickSort( workList, 0, len(workList)-1 )
+	return workList
+
 def testListsGenerator( Length ):
 	# Numbers from 0 to NumberRange
 	NumberRange = 1000
@@ -78,13 +143,15 @@ def Test():
 
 if __name__ == "__main__":
 	randomList = [ 9, 1, 6, 7, 3, 0, 10, 2, 4, 8, 5, 11, 12, 13, 42, 17, 4, 7, 101, 3 ]
-	Test()
+	#Test()
 	print("")
-	testList = randomList[:]
+	# setup a list to run on 
 	randomList[0] = 200
-	print( InsertionSort( testList ) )
+	testList = randomList[:]
+	
+	print( quickSort( testList ) )
 	print( randomList )
-	print( InsertionSort( randomList ) )
+	print( quickSort( randomList ) )
 	print( randomList )
 	#testList = testListsGenerator( 12 )
 	#print( "testList     =", randomList )
