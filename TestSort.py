@@ -14,73 +14,8 @@ import matplotlib.pyplot
 import numpy as np
 import pickle
 #import audsort
-from audsort import BubbleSort, InsertionSort, SelectionSort, testListsGenerator
-
-'''
-def BubbleSort( workList ):
-	for k in range( len(workList)-1, 0, -1 ):
-		sorted = True
-		for i in range( 0, k ):
-			if workList[i] > workList[i+1]:
-				workList[i], workList[i+1] = workList[i+1], workList[i]
-				sorted = False
-		# stop if allElements are sorted
-		if sorted:
-			break
-	# allElements are sorted
-	return workList
-
-def InsertionSort( workList ):
-	for k in range( 1, len(workList) ):
-		# store current element
-		key = workList[k]
-		i = k-1
-		while i >= 0 and workList[i] > key:
-			workList[i+1] = workList[i]
-			i = i-1
-		# insert sored element
-		workList[i+1] = key
-	
-	return workList
-
-def SelectionSort( workList ):
-	for j in range( 0, len(workList) ):
-		minIndex = j
-		for i in range( j+1, len(workList) ):
-			if workList[i] < workList[minIndex]:
-				minIndex = i
-		workList[j], workList[minIndex] = workList[minIndex], workList[j]
-	# allElements are sorted
-	return workList
-
-def testListsGenerator( Length ):
-	# Numbers from 0 to NumberRange
-	NumberRange = 1000
-	workList = []
-
-	for i in range( Length ):
-		randomNumber = int( random.random() * NumberRange )
-		workList.append( randomNumber )
-
-	return workList
-'''
-def PrintRes( Res, SortAlgo, SortName ):
-	print( "\n\n\n" )
-	for SortNum in range( len(SortAlgo) ):
-		for i in range( len( Res[SortNum] ) ):
-			print( "Sort=%s len=%d Runtime=%f" % (SortName[SortNum], Res[SortNum][i][0], Res[SortNum][i][1]*1000) )
-
-def SavesortedLists( sortedLists ):
-	#for item in sortedLists:
-	for i in range( len(sortedLists) ):
-		filename = "sortedLists" + str(i) + ".txt"
-		TestResults = open( filename, "w" )
-		
-		subList = sortedLists[i]
-		for j in range( len(subList) ):
-			TestResults.write("\t{}\n".format(subList[j]))
-		
-		TestResults.close()
+from audsort import BubbleSort, InsertionSort, SelectionSort, mergeSort, quickSort, testListsGenerator
+import copy
 
 if __name__ == "__main__":
 	max = 200
@@ -92,15 +27,15 @@ if __name__ == "__main__":
 	# make empty List for results
 	Res = []
 	sortedLists = []
-	SortAlgo = [ BubbleSort, InsertionSort, SelectionSort ]
-	SortName = [ "BubbleSort", "InsertionSort", "SelectionSort" ]
+	SortAlgo = [ BubbleSort, InsertionSort, SelectionSort, mergeSort, quickSort ]
+	SortName = [ "BubbleSort", "InsertionSort", "SelectionSort", "mergeSort", "quickSort" ]
 
 	for SortNum in range( len(SortAlgo) ):
 		sort = SortAlgo[SortNum]
 		print( "Testing %s" % SortAlgo[SortNum].__name__ )
 		# make copy of randomList
 		workList = []
-		workList = randList[:]
+		workList = copy.deepcopy( randList )
 		runTimes = []
 		for i in range( len( workList ) ):
 			# test runTime of Bubblesort
@@ -142,7 +77,7 @@ if __name__ == "__main__":
 	#ax.plot( [min], [TestFunction(min)], 'rD' )
 	#ywerte = [TestFunction(i) for i in xwerte]
 	# Erzeugen einer Legende mit zwei Einträgen.
-	ax.legend( [SortName[0], SortName[1], SortName[2]] )
+	ax.legend( [SortName[0], SortName[1], SortName[2], SortName[3], SortName[4]] )
 	# Erzeugen der x-Achsen-Beschriftung. Dies entspricht der Funktion xlabel in Matlab.
 	ax.set_xlabel('Listlength')
 	# Erzeugen der y-Achsen-Beschriftung. Dies entspricht der Funktion ylabel in Matlab.
