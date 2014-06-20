@@ -160,7 +160,7 @@ def init( Field ):
 	input.grid(row=0, column=1)
 	input.pack( side=LEFT, padx=5, pady=5 )
 	# preload with valid value
-	input.insert( 0, "1" )
+	input.insert( 0, "1404" )
 	
 	#label für ausgaben
 	label = Label( app, text=":)" )
@@ -560,74 +560,53 @@ def getFound( pos, found ):
 		if pos in tmpList:
 			return tmpList
 
-def NeuerWegZumAusgang( route, found, unvisitedPos, pos ):
+# route
+# found
+# RouteLen ^= Index of currentPos in Route
+# unvisitedPosIndex ^= Index of Next in found
+#   NeuerWegZumAusgang( route, found, RouteLen, unvisitedPosIndex )
+def NeuerWegZumAusgang( route, found, RouteLen, unvisitedPosIndex ):
 	set_color( 'yellow' )
 	print( "Bestimme neuen Weg zum Ausgang!" )
-	print( "next", unvisitedPos, "current", pos )
+	#print( "next", unvisitedPos, "current", pos )
 	print( "route" );print( route, "\n" )
 	print( "found" );print( found, "\n" )
 	
-	# current = pos
-	# next = unvisitedPos
-	# Schritt 1.
-	# current solange verschieben, bis current auf found ist
-	partB = []
-	currentIndex = route.index( pos )
-	NextIndex = found.index( unvisitedPos )
+	print( "\nRouteLen", RouteLen, "len(route)", len(route), "len(found)", len(found) )
+	# Finde gemeinsamen Punkt von route und found
+	# Vom Ende aus.
+	commonPointIndex = RouteLen - 1
+	while route[commonPointIndex] != found[commonPointIndex]:
+		print( "i", commonPointIndex, route[commonPointIndex], found[commonPointIndex] )
+		commonPointIndex -= 1
+	print( "i", commonPointIndex, route[commonPointIndex], found[commonPointIndex] )
+	# Der neue Weg setzt sich zusammen aus:
+	# Von s bis unvisitedPosIndex von found
+	# Von currentPos bis commonPointIndex von route (also Rückwärts)
+	# Von commonPointIndex bis E von found
 	
-	while pos not in found:
-		# current in B eintragen
-		print( "verschiebe current einen zurück" )
-		partB.append( pos )
-		
-		# index von current bestimmen
-		currentIndex = route.index( pos )
-		# einen zurückgehen
-		if currentIndex > 0:
-			currentIndex = currentIndex - 1
-		else:
-			raise Exception('index out of range', 'wtf')
-		# und neue Position holen
-		pos = route[currentIndex]
+	partA = found[ : unvisitedPosIndex+1 ]
+	partB = route[ : commonPointIndex : -1 ]
+	partC = found[ commonPointIndex: ]
 	
+	print( "Neuer Weg:\n" )
 	
+	print( "\nPart A len %d" %len(partA)  )
+	print( partA )
 	
-	print( "currentIndex" , currentIndex)
-	print( "NextIndex   " , NextIndex)
-	#print( "part" );print( part )
-	if currentIndex < NextIndex:
-		print( "currentIndex < NextIndex" )
-		partA = found[:currentIndex+1]
-		partC = found[NextIndex:]
-		print( "Neuer Weg:\n" )
-		
-		print( "\nPart A len %d" %len(partA)  )
-		print( partA )
-		
-		print( "\nPart B len %d" %len(partB)  )
-		print( partB )
-		
-		print( "\nPart C len %d" %len(partC)  )
-		print( partC )
-	else:
-		print( "currentIndex >= NextIndex" )
-		partA = found[:NextIndex]
-		partC = found[currentIndex:]
-		print( "Neuer Weg:\n" )
-		
-		print( "\nPart A len %d" %len(partA)  )
-		print( partA )
-		
-		print( "\nPart B len %d" %len(partB)  )
-		print( partB )
-		
-		print( "\nPart C len %d" %len(partC)  )
-		print( partC )
+	print( "\nPart B len %d" %len(partB)  )
+	print( partB )
+	
+	print( "\nPart C len %d" %len(partC)  )
+	print( partC )
 	
 	new = []
 	new.extend( partA )
 	new.extend( partB )
 	new.extend( partC )
+	
+	print( "\nnew len %d" %len(new)  )
+	print( new )
 	
 	return new
 	pass
@@ -697,17 +676,18 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	"""
 	if isEscape( Field, pos ):
 		global isRouteFound
+		isRouteFound = True
 		
 		set_color('green')
 		print( pos, "Ausgang gefunden len %d" %len(route) )
 		print( route )
 		set_color()
 		
-		isRouteFound = True
+		# TODO 1.1 Den Weg zum Ausgang auf die kürzest möglichen Weg reduzieren
 		findEscape.found = route
 		
-		DistToEscape[ pos ] = 0
-		return 0
+		DistToEscape[ pos ] = 1
+		return DistToEscape[ pos ]
 	
 	#####################################################################################
 	"""
@@ -732,10 +712,11 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	"""
 	
 	if isRouteFound == False:
-		DistToStart[ pos ] = RouteLen - 1
-		print( pos, "Dist to Start", RouteLen - 1, "saved" )
+		DistToStart[ pos ] = RouteLen
+		print( pos, "Dist to Start", RouteLen, "saved" )
 	else:
-		print( pos, "Dist to Start", RouteLen - 1, "saved" )
+		#DistToStart[ pos ] = RouteLen
+		print( pos, "Dist to Start", RouteLen, "saved" )
 		"""
 		Wenn wir einen Weg zum Ausgang kennen und von einer anderen Instanz aufgerufen 
 		wurden, dann hat diese Instanz immer eine Entfernung bis zum Ausgang gespeichert!
@@ -743,7 +724,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 		"""
 		print( pos, "LastPos", LastPos )
 		LastPosTuple = LastPos[0]
-		print( pos, "LastPosTuple", LastPosTuple )
+		#print( pos, "LastPosTuple", LastPosTuple )
 		DistToEscape_fromPrev = DistToEscape[LastPosTuple]
 		print( pos, "DistToEscape_fromPrev", DistToEscape_fromPrev )
 		DistToEscape[pos] = DistToEscape_fromPrev + 1
@@ -779,40 +760,77 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 			FoundLen = len( found )
 			
 			if unvisitedPos in found:
-				#####################################################################################
 				"""
 				Wenn ein Nachbar im Weg zum Ausgang ist, dann gibt es vielleicht einen kürzeren Weg.
 				Sollte das so sein, wird der neue bessere Weg gespeichert.
 				"""
-				set_color( 'blue' )
-				print( pos, "possible optimization for", unvisitedPos )
-				
-				#RouteLen       #gibt die länge der aktuellen route an
-				#DistToEsc #gibt die länge bis zum Ausgang an
-				
-				unvisitedPosIndex = found.index( unvisitedPos )
-				DistToEsc = FoundLen - unvisitedPosIndex
-				NewLen = RouteLen + DistToEsc
-				
-				print( pos, "DistToEsc", DistToEsc, "RouteLen", RouteLen, "NewLen", NewLen )
-				
-				if NewLen < FoundLen:
-					set_color( 'green' )
-					print( pos, "found better way over", unvisitedPos, FoundLen - NewLen, "shorter" )
+				if pos in found:
+					"""
+					Die aktuelle Position und der Nachbar sind im Weg zum Ausgang!
+					"""
+					#####################################################################################
+					set_color( 'blue' )
+					print( pos, "possible optimization for", unvisitedPos )
 					
-					new = route
-					new.extend( found[unvisitedPosIndex:] )
-					findEscape.found = found = new
-					# TODO: hier villeicht noch DistToEscape[pos] nachtragen ???
-					print( pos, "new len %d" %len(new) );
-					print( new )
+					#??? unvisitedPosIndex = DistToEscape[unvisitedPos]
+					unvisitedPosIndex = found.index( unvisitedPos )
+					#DistToEsc = FoundLen - unvisitedPosIndex
+					#NewLen = RouteLen + DistToEsc
 					
-					SetNewRouteColor()
-					drawRoute( new )
-					sync()
+					print( pos, "RouteLen", RouteLen, "unvisitedPosIndex", unvisitedPosIndex )
+					#print( pos, "DistToEsc", DistToEsc, "NewLen", NewLen )
+					#print( pos, "FoundLen", FoundLen, "NewLen", NewLen )
+					
+					if RouteLen-1 < unvisitedPosIndex:
+						set_color( 'green' )
+						print( pos, "found better way over", unvisitedPos, unvisitedPosIndex - (RouteLen-1), "shorter" )
+						
+						new = route
+						new.extend( found[unvisitedPosIndex:] )
+						findEscape.found = found = new
+						# TODO: hier villeicht noch DistToEscape[pos] nachtragen ???
+						temp = DistToEscape[unvisitedPos]
+						
+						print( pos, "new len %d" %len(new) );
+						#print( new )
+						
+						SetNewRouteColor()
+						drawRoute( new )
+						sync()
+					else:
+						print( pos, "not a better way over", unvisitedPos, (RouteLen-1) - unvisitedPosIndex, "longer" )
 				else:
-					print( pos, "not a better way over", unvisitedPos, NewLen - FoundLen, "longer" )
-				
+					"""
+					Die aktuelle Position ist nicht im Weg zum Ausgang!
+					Es gibt für die akutelle Position eine Distanz bis zum Ausgang.
+					
+					Diese Distanz wird zu der Distanz, die der Nachbar zum Start hat addiert.
+					Wenn dieser Wert kleiner ist, dann gibt es eine neue Bessere Route zum Ausgang!
+					"""
+					# S->Next
+					unvisitedPosIndex = found.index( unvisitedPos )
+					newLen = unvisitedPosIndex + 1 + DistToEscape[pos]
+					set_color( 'yellow' )
+					
+					print( pos, "unvisitedPosIndex", unvisitedPosIndex, "DistToEscape", DistToEscape[pos] )
+					print( pos, "newLen", newLen, "FoundLen", FoundLen )
+					
+					if newLen < FoundLen:
+						print( pos, "found better way over", unvisitedPos, FoundLen - newLen, "shorter" )
+						# route
+						# found
+						# RouteLen ^= Index of Pos in Route
+						# unvisitedPosIndex ^= Index of Next in found
+						new = NeuerWegZumAusgang( route, found, RouteLen, unvisitedPosIndex )
+						prevDistToEscape = DistToEscape[pos]
+						DistToEscape[pos] -= FoundLen - newLen
+						print( pos, "prevDistToEscape", prevDistToEscape, "newDistToEscape", DistToEscape[pos] )
+						SetNewRouteColor()
+						drawRoute( new )
+						sync()
+					else:
+						print( pos, "not a better way over", unvisitedPos, newLen - FoundLen , "longer" )
+					pass
 				set_color()
 			elif unvisitedPos in DistToEscape:
 				#####################################################################################
@@ -857,7 +875,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 				set_color()
 				
 				if RouteLen + 1 < FoundLen:
-					print( pos, ">>", unvisitedPos )
+					print( pos, ">>", unvisitedPos, DistToEscape[pos] )
 					temp = findEscape( Field, unvisitedPos, route )
 					print( pos, "<<", unvisitedPos, temp )
 			else:
@@ -865,13 +883,13 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 				"""
 				Nachbar ist nicht im Weg zum Ausgang und
 				es ist keine Entfernung zum Ausgang angegeben und
-				dieser Nachbar wurde noch nie besucht, muss hier weiter gesucht werden!
+				dieser Nachbar wurde noch nie besucht, muss hier weiter gesuchen!
 				"""
 				set_color( 'magenta' )
 				print( pos, "first visit", unvisitedPos )
 				set_color()
 				
-				print( pos, ">>", unvisitedPos )
+				print( pos, ">>", unvisitedPos, DistToEscape[pos] )
 				temp = findEscape( Field, unvisitedPos, route )
 				print( pos, "<<", unvisitedPos, temp )
 			
@@ -894,7 +912,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 		#####################################################################################
 	
 	"""
-	Nachdem alle Nachbar überprüft wurden, muss ein Rückgabewert bestimmet werden.
+	Nachdem alle Nachbarn überprüft wurden, muss ein Rückgabewert bestimmet werden.
 	Wenn diese Instanz die erste Instanz ist mit der die Suche gestartet wurde, dann geben 
 	wir die gefundenen Weg zum Ausgang zurück oder eine leere Liste.
 	
@@ -942,7 +960,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 					print( BL + zeile.ljust( sizex_mid ) + BR )
 			
 			print( "#" * sizex )
-			print( found )
+			#print( found )
 			
 			#print( "#######################################################" )
 			#print( "# Ausgang gefunden                                    #" )
