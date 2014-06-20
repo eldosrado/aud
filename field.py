@@ -623,6 +623,20 @@ def getCurrentRoute( PreviousRoute, CurrenPos ):
 	#route = tuple( listroute )
 	route = list( listroute )
 
+def SaveDistToEscape( pos, temp ):
+	try:
+		DistToEscape[ pos ] = min( DistToEscape[ pos ], temp )
+		#if pos in DistToEscape:
+		#	DistToEscape[ pos ] = min( DistToEscape[ pos ] or float("inf"), temp )
+		#else:
+		#	DistToEscape[ pos ] = temp or float("inf")
+	except:
+		print( "###################################################################" )
+		print( pos, temp )
+		if pos in DistToEscape:
+			print( DistToEscape[ pos ] )
+		raise
+
 def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	"""
 	Call this function with a field to search in.
@@ -663,6 +677,9 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	#print( "Route: %d\n" % len(route), route )
 	set_color()
 	
+	if pos not in DistToEscape:
+		DistToEscape[pos] = float("inf")
+	
 	#####################################################################################
 	"""
 	Trivialer Fall bei einer Rekursion.
@@ -685,8 +702,8 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 		
 		# TODO 1.1 Den Weg zum Ausgang auf die kürzest möglichen Weg reduzieren
 		findEscape.found = route
-		
-		DistToEscape[ pos ] = 1
+		SaveDistToEscape( pos, 1 )
+		#DistToEscape[ pos ] = 1
 		return DistToEscape[ pos ]
 	
 	#####################################################################################
@@ -697,9 +714,6 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	Es müssen alle direkten Nachbar untersucht werden, ob nicht diese zum Ausgang führen.
 	"""
 	Nachbarn = getNeighbors( Field, pos, LastPos )
-	set_color( 'cyan' )
-	print( pos, "Nachbarn", Nachbarn )
-	set_color()
 	
 	#####################################################################################
 	"""
@@ -730,17 +744,16 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 		DistToEscape[pos] = DistToEscape_fromPrev + 1
 		print( pos, "DistToEscape[pos]", DistToEscape[pos] )
 	
-	
-	
 	#####################################################################################
 	"""
-	Nun werden alle direkten Nachbar untersucht.
+	Nun werden alle direkten Nachbarn untersucht.
 	"""
-	for unvisitedPos in Nachbarn:
-		temp = None
-		found = findEscape.found
-		
-		if isRouteFound == False:
+	if isRouteFound == False:
+		set_color( 'cyan' )
+		print( pos, "Nachbarn1", Nachbarn )
+		set_color()
+		for unvisitedPos in Nachbarn:
+			temp = float("inf")
 			#####################################################################################
 			"""
 			Für den Fall, dass noch kein Weg gefunden wurde.
@@ -753,12 +766,23 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 				print( pos, ">>", unvisitedPos )
 				temp = findEscape( Field, unvisitedPos, route )
 				print( pos, "<<", unvisitedPos, temp )
-		else:
+				# Wenn eine Route gefunden wurde, dann den akutell bearbeiteten Nachbarn ertfernen
+				if temp < float("inf"):
+					SaveDistToEscape( pos, temp+1 )
+					Nachbarn.remove( unvisitedPos )
+					break
+	
+	if isRouteFound == True:
+		set_color( 'cyan' )
+		print( pos, "Nachbarn2", Nachbarn )
+		set_color()
+		for unvisitedPos in Nachbarn:
+			temp = None
+			found = findEscape.found
+			FoundLen = len( found )
 			"""
 			Für den Fall, dass ein Weg gefunden wurde, dann:
 			"""
-			FoundLen = len( found )
-			
 			if unvisitedPos in found:
 				"""
 				Wenn ein Nachbar im Weg zum Ausgang ist, dann gibt es vielleicht einen kürzeren Weg.
@@ -774,6 +798,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 					
 					#??? unvisitedPosIndex = DistToEscape[unvisitedPos]
 					unvisitedPosIndex = found.index( unvisitedPos )
+					currentPosIndex   = found.index( pos )
 					#DistToEsc = FoundLen - unvisitedPosIndex
 					#NewLen = RouteLen + DistToEsc
 					
@@ -781,11 +806,11 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 					#print( pos, "DistToEsc", DistToEsc, "NewLen", NewLen )
 					#print( pos, "FoundLen", FoundLen, "NewLen", NewLen )
 					
-					if RouteLen-1 < unvisitedPosIndex:
+					if currentPosIndex < unvisitedPosIndex:
 						set_color( 'green' )
-						print( pos, "found better way over", unvisitedPos, unvisitedPosIndex - (RouteLen-1), "shorter" )
+						print( pos, "found better way over", unvisitedPos, unvisitedPosIndex - currentPosIndex, "shorter" )
 						
-						new = route
+						new = found[:currentPosIndex+1]
 						new.extend( found[unvisitedPosIndex:] )
 						findEscape.found = found = new
 						# TODO: hier villeicht noch DistToEscape[pos] nachtragen ???
@@ -798,7 +823,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 						drawRoute( new )
 						sync()
 					else:
-						print( pos, "not a better way over", unvisitedPos, (RouteLen-1) - unvisitedPosIndex, "longer" )
+						print( pos, "not a better way over", unvisitedPos, currentPosIndex - unvisitedPosIndex, "longer" )
 				else:
 					"""
 					Die aktuelle Position ist nicht im Weg zum Ausgang!
@@ -822,9 +847,10 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 						# RouteLen ^= Index of Pos in Route
 						# unvisitedPosIndex ^= Index of Next in found
 						new = NeuerWegZumAusgang( route, found, RouteLen, unvisitedPosIndex )
-						prevDistToEscape = DistToEscape[pos]
-						DistToEscape[pos] -= FoundLen - newLen
-						print( pos, "prevDistToEscape", prevDistToEscape, "newDistToEscape", DistToEscape[pos] )
+						findEscape.found = found = new
+						#prevDistToEscape = DistToEscape[pos]
+						#DistToEscape[unvisitedPos] = DistToEscape[pos]+1
+						#print( pos, "prevDistToEscape", prevDistToEscape, "newDistToEscape", DistToEscape[pos] )
 						SetNewRouteColor()
 						drawRoute( new )
 						sync()
@@ -832,7 +858,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 						print( pos, "not a better way over", unvisitedPos, newLen - FoundLen , "longer" )
 					pass
 				set_color()
-			elif unvisitedPos in DistToEscape:
+			elif unvisitedPos in DistToEscape and DistToEscape[unvisitedPos] < DistToEscape[pos]:
 				#####################################################################################
 				"""
 				Wenn ein Nachbar nicht im Weg zum Ausgang ist, aber es ist für diesen Nachbarn schon
@@ -850,6 +876,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 					print( pos, "possible shorter route over", unvisitedPos, "RouteLen", RouteLen, "+", dist , ">=", FoundLen )
 				
 				set_color()
+				pass
 			elif unvisitedPos in DistToStart:
 				#####################################################################################
 				"""
@@ -868,16 +895,22 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 				Es kostet halt immer nur Zeit
 				???
 				"""
-				set_color( 'red' )
-				print( pos, "visited before", unvisitedPos )
-				print( pos, "DistToStart", DistToStart[unvisitedPos] )
-				print( pos, "RouteLen", RouteLen, "FoundLen", FoundLen )
-				set_color()
 				
 				if RouteLen + 1 < FoundLen:
+					set_color( 'red' )
+					print( pos, unvisitedPos, "visited before" )
+					print( pos, "RouteLen", RouteLen, "FoundLen", FoundLen, "DistToStart", DistToStart[unvisitedPos] )
+					set_color()
 					print( pos, ">>", unvisitedPos, DistToEscape[pos] )
 					temp = findEscape( Field, unvisitedPos, route )
 					print( pos, "<<", unvisitedPos, temp )
+				else:
+					set_color( 'red' )
+					print( pos, "RouteLen > FoundLen" )
+					#print( pos, unvisitedPos, "visited before" )
+					#print( pos, "RouteLen", RouteLen, "FoundLen", FoundLen, "DistToStart", DistToStart[unvisitedPos] )
+					
+					set_color()
 			else:
 				#####################################################################################
 				"""
@@ -893,23 +926,22 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 				temp = findEscape( Field, unvisitedPos, route )
 				print( pos, "<<", unvisitedPos, temp )
 			
-		
-		"""
-		Habe einen Nachbarn überprüft.
-		
-		Wenn eine Entfernung zum Ausgang angegeben wurde, muss für diesen Punkt eine 
-		Entfernung gespeichert werden.
-		Da auch noch andere Nachbarn eine Distanz bis zum Ziel angeben können, muss
-		immer nur die kürzeste Distanz bis zum Ziel gespeichert werden.
-		"""
-		if temp != None:
-			if pos in DistToEscape:
-				print( pos, "DistToEscape", DistToEscape[ pos ], "temp", temp )
-				minDist = min( DistToEscape[ pos ], temp+1 )
-				DistToEscape[ pos ] = minDist
-			else:
-				DistToEscape[ pos ] = temp + 1
-		#####################################################################################
+			"""
+			Habe einen Nachbarn überprüft.
+			
+			Wenn eine Entfernung zum Ausgang angegeben wurde, muss für diesen Punkt eine 
+			Entfernung gespeichert werden.
+			Da auch noch andere Nachbarn eine Distanz bis zum Ziel angeben können, muss
+			immer nur die kürzeste Distanz bis zum Ziel gespeichert werden.
+			"""
+			if temp != None:
+				if pos in DistToEscape:
+					print( pos, "DistToEscape", DistToEscape[ pos ], "temp", temp )
+					minDist = min( DistToEscape[ pos ], temp+1 )
+					DistToEscape[ pos ] = minDist
+				else:
+					DistToEscape[ pos ] = temp + 1
+			#####################################################################################
 	
 	"""
 	Nachdem alle Nachbarn überprüft wurden, muss ein Rückgabewert bestimmet werden.
@@ -921,10 +953,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	Wenn nicht geben wir None zurück
 	"""
 	if pos != findEscape.first:
-		if pos in DistToEscape:
-			return DistToEscape[ pos ]
-		else:
-			return None
+		return DistToEscape[ pos ]
 	else:
 		if isRouteFound:
 			FoundLen = str( len( found ) )
