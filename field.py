@@ -210,7 +210,7 @@ def GetColor():
 		if color < 0:
 			color = color + 1.0
 		if isRouteFound == False:
-			val = colorsys.hsv_to_rgb( color, 0.75, 1.0 )
+			val = colorsys.hsv_to_rgb( color, 0.5, 1.0 )
 		else:
 			val = colorsys.hsv_to_rgb( color, 1.0, 1.0 )
 		LastColor = color
@@ -728,15 +728,16 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	if isRouteFound == False:
 		DistToStart[ pos ] = RouteLen
 		print( pos, "Dist to Start", RouteLen, "saved" )
+		DistToEscape[pos] = float("inf")
 	else:
-		#DistToStart[ pos ] = RouteLen
+		DistToStart[ pos ] = RouteLen
 		print( pos, "Dist to Start", RouteLen, "saved" )
 		"""
 		Wenn wir einen Weg zum Ausgang kennen und von einer anderen Instanz aufgerufen 
 		wurden, dann hat diese Instanz immer eine Entfernung bis zum Ausgang gespeichert!
 		Und diese benutzen wir um für die Aktuelle Position die Distanz zu speichern!
 		"""
-		print( pos, "LastPos", LastPos )
+		#print( pos, "LastPos", LastPos )
 		LastPosTuple = LastPos[0]
 		#print( pos, "LastPosTuple", LastPosTuple )
 		DistToEscape_fromPrev = DistToEscape[LastPosTuple]
@@ -808,7 +809,9 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 					
 					if currentPosIndex < unvisitedPosIndex:
 						set_color( 'green' )
-						print( pos, "found better way over", unvisitedPos, unvisitedPosIndex - currentPosIndex, "shorter" )
+						print( pos, "found better way over", unvisitedPos, unvisitedPosIndex - currentPosIndex - 1, "shorter" )
+						print( pos, "debug", currentPosIndex, unvisitedPosIndex )
+						print( pos, found[currentPosIndex:currentPosIndex+6] )
 						
 						new = found[:currentPosIndex+1]
 						new.extend( found[unvisitedPosIndex:] )
@@ -823,8 +826,9 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 						drawRoute( new )
 						sync()
 					else:
-						print( pos, "not a better way over", unvisitedPos, currentPosIndex - unvisitedPosIndex, "longer" )
+						print( pos, "not a better way over", unvisitedPos, currentPosIndex - unvisitedPosIndex - 1, "longer" )
 				else:
+					pass
 					"""
 					Die aktuelle Position ist nicht im Weg zum Ausgang!
 					Es gibt für die akutelle Position eine Distanz bis zum Ausgang.
@@ -858,7 +862,8 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 						print( pos, "not a better way over", unvisitedPos, newLen - FoundLen , "longer" )
 					pass
 				set_color()
-			elif unvisitedPos in DistToEscape and DistToEscape[unvisitedPos] < DistToEscape[pos]:
+			#elif unvisitedPos in DistToEscape and DistToEscape[unvisitedPos] < DistToEscape[pos]:
+			elif unvisitedPos in DistToEscape and DistToEscape[unvisitedPos] == float("inf"):
 				#####################################################################################
 				"""
 				Wenn ein Nachbar nicht im Weg zum Ausgang ist, aber es ist für diesen Nachbarn schon
@@ -866,18 +871,33 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 				Dann muss überprüft werden, ob es nicht einen kürzeren Weg zum Ausgang über diesen
 				Nachbar gibt.
 				"""
+				"""
 				set_color( 'cyan' )
 				dist = FoundLen - DistToEscape[ unvisitedPos ]
-				
-				
 				if RouteLen + dist < FoundLen:
 					print( pos, "possible shorter route over", unvisitedPos, "RouteLen", RouteLen, "+", dist , " <", FoundLen )
 				else:
 					print( pos, "possible shorter route over", unvisitedPos, "RouteLen", RouteLen, "+", dist , ">=", FoundLen )
-				
 				set_color()
+				"""
 				pass
-			elif unvisitedPos in DistToStart:
+				if RouteLen + 1 < FoundLen and (not unvisitedPos in route):
+					set_color( 'red' )
+					print( pos, unvisitedPos, "visited before" )
+					print( pos, "RouteLen", RouteLen, "FoundLen", FoundLen, "DistToStart", DistToStart[unvisitedPos], "DistToEscape[pos]", DistToEscape[pos] )
+					print( pos, "DistToStart[unvisitedPos]+DistToEscape[pos]", DistToStart[unvisitedPos]+ DistToEscape[pos] )
+					set_color()
+					print( pos, ">>", unvisitedPos, DistToEscape[pos] )
+					temp = findEscape( Field, unvisitedPos, route )
+					print( pos, "<<", unvisitedPos, temp )
+				else:
+					set_color( 'red' )
+					print( pos, "RouteLen > FoundLen" )
+					#print( pos, unvisitedPos, "visited before" )
+					#print( pos, "RouteLen", RouteLen, "FoundLen", FoundLen, "DistToStart", DistToStart[unvisitedPos] )hon
+					
+					set_color()
+			#elif unvisitedPos in DistToStart:
 				#####################################################################################
 				"""
 				Nachbar ist nicht im Weg zum Ausgang und
@@ -895,24 +915,8 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 				Es kostet halt immer nur Zeit
 				???
 				"""
-				
-				if RouteLen + 1 < FoundLen:
-					set_color( 'red' )
-					print( pos, unvisitedPos, "visited before" )
-					print( pos, "RouteLen", RouteLen, "FoundLen", FoundLen, "DistToStart", DistToStart[unvisitedPos] )
-					set_color()
-					print( pos, ">>", unvisitedPos, DistToEscape[pos] )
-					temp = findEscape( Field, unvisitedPos, route )
-					print( pos, "<<", unvisitedPos, temp )
-				else:
-					set_color( 'red' )
-					print( pos, "RouteLen > FoundLen" )
-					#print( pos, unvisitedPos, "visited before" )
-					#print( pos, "RouteLen", RouteLen, "FoundLen", FoundLen, "DistToStart", DistToStart[unvisitedPos] )
-					
-					set_color()
-			else:
-				#####################################################################################
+			elif (not unvisitedPos in DistToStart) and (not unvisitedPos in route):
+				pass
 				"""
 				Nachbar ist nicht im Weg zum Ausgang und
 				es ist keine Entfernung zum Ausgang angegeben und
@@ -955,6 +959,7 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 	if pos != findEscape.first:
 		return DistToEscape[ pos ]
 	else:
+		pass
 		if isRouteFound:
 			FoundLen = str( len( found ) )
 			
@@ -1006,7 +1011,6 @@ def findEscape( Field, pos=(1,1), PreviousRoute=() ):
 		
 		set_color()
 		return found
-	
 
 if __name__ == "__main__":
 	#drawRoute.lastRoute = []
@@ -1014,9 +1018,9 @@ if __name__ == "__main__":
 	debug = False
 	set_color()
 	#fileName = "TestField1.txt"		#spirale
-	#fileName = "TestField2.txt"		#klein
+	fileName = "TestField2.txt"		#klein
 	#fileName = "TestField4.txt"		#mittel
-	fileName = "TestField3.txt"		#groß
+	#fileName = "TestField3.txt"		#groß
 	
 	TestField = ReadField( fileName )
 	init( TestField )
