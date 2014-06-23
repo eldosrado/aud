@@ -7,9 +7,11 @@ class Tower( Stack ):
 	"""
 	"""
 	
-	def __init__(self, name="None" ):
+	def __init__(self, name="None", DataAsList=[] ):
 		super(Tower, self).__init__()
 		self.name = name
+		if DataAsList:
+			self.Nodes = DataAsList[:]
 	
 	def removeDisk(self):
 		return self.pop()
@@ -22,6 +24,8 @@ class Tower( Stack ):
 	def __str__(self):
 		return "Tower {0}: {1}".format( self.name, self.Nodes )
 	
+	def __repr__(self):
+		return 'Tower( name="{0}", Nodes={1} )'.format( self.name, self.Nodes )
 
 def printTowers( Tower1, Tower2, Tower3 ):
 	Towers = [ Tower1, Tower2, Tower3 ]
@@ -77,4 +81,12 @@ def TowerOfHanoi( NumberOfDisks=3 ):
 	print( "Done" )
 
 if __name__ == "__main__":
-	TowerOfHanoi( 10 )
+	Debuging = False
+	if not Debuging:
+		TowerOfHanoi( 5 )
+	else:
+		TestData = [20, 19, 16, 15, 10, 9, 6, 5]
+		TestTower = Tower( name="Test", DataAsList=TestData )
+		
+		print( TestTower )
+		print( TestTower.__repr__() )
